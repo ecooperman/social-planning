@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Social Planning</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <h1>Date &amp; Activity Ideas</h1>
+  </header>
+
+  <main>
+    <section class="new-idea-card">
+      <h2>Add an idea</h2>
+      <form id="new-idea-form">
+        <div class="field">
+          <label for="new-name">Name <span class="required">*</span></label>
+          <input id="new-name" name="name" type="text" required placeholder="e.g. Sunset picnic at the park" />
+        </div>
+        <div class="field">
+          <label for="new-description">Description</label>
+          <textarea id="new-description" name="description" rows="2" placeholder="Optional notes"></textarea>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="new-url">URL</label>
+            <input id="new-url" name="url" type="url" placeholder="https://instagram.com/p/..." />
+          </div>
+          <div class="field">
+            <label for="new-date">Date</label>
+            <input id="new-date" name="event_date" type="date" />
+          </div>
+        </div>
+        <button type="submit">Add idea</button>
+      </form>
+    </section>
+
+    <section>
+      <div class="ideas-header">
+        <h2>Ideas</h2>
+        <span id="idea-count" class="idea-count"></span>
+      </div>
+      <div id="ideas-list" class="ideas-list"></div>
+      <p id="empty-state" class="empty-state" hidden>No ideas yet - add one above to get started.</p>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

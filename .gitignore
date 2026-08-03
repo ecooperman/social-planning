@@ -1,0 +1,5 @@
+venv/
+__pycache__/
+*.pyc
+ideas.db
+.DS_Store
