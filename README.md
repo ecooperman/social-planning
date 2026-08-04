@@ -105,6 +105,37 @@ strategy matched. That's surfaced back to the UI rather than treated as a
 crash - scraping is a nice-to-have on top of the manually-entered fields,
 never a requirement.
 
+## Deploying
+
+Runs as a systemd service on the Digital Ocean droplet, reached through a
+Cloudflare Tunnel (no inbound ports opened on the droplet) and gated by
+Cloudflare Access - see `deploy/social-planning.service`.
+
+One-time setup on the droplet:
+
+```bash
+sudo mkdir -p /opt/apps/social-planning && sudo chown deploy:deploy /opt/apps/social-planning
+# as the deploy user:
+git clone https://github.com/ecooperman/social-planning.git /opt/apps/social-planning
+cd /opt/apps/social-planning
+python3 -m venv venv && source venv/bin/activate
+pip install -r requirements.txt
+alembic upgrade head
+sudo cp deploy/social-planning.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now social-planning
+```
+
+Then add an ingress entry for `127.0.0.1:8020` to `/etc/cloudflared/config.yml`,
+route DNS for its hostname (`cloudflared tunnel route dns <tunnel-name>
+<hostname>`), and add a Cloudflare Access policy for that hostname.
+
+Ongoing deploys are automatic: `.github/workflows/deploy.yml` runs on every
+push to `main` - it SSHes in, pulls, reinstalls dependencies, runs `alembic
+upgrade head`, and restarts the service. Needs these repo secrets set once
+(Settings -> Secrets and variables -> Actions): `DO_HOST`, `DO_USER` (the
+`deploy` user), `DO_SSH_KEY` (that user's private key).
+
 ## Notes
 
 - Only `name` is required on an idea - everything else (description, URL,
