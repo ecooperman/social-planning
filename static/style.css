@@ -69,6 +69,9 @@ input,
 textarea,
 button {
   font-family: inherit;
+}
+
+button {
   font-size: 14px;
 }
 
@@ -76,6 +79,8 @@ input[type="text"],
 input[type="url"],
 input[type="date"],
 textarea {
+  /* 16px minimum keeps iOS Safari from auto-zooming the page on focus */
+  font-size: 16px;
   padding: 8px 10px;
   border: 1px solid #d7d3c9;
   border-radius: 6px;
@@ -261,4 +266,29 @@ button {
 .cancel-btn {
   background: #eee;
   color: #4a473f;
+}
+
+@media (max-width: 480px) {
+  .app-header {
+    padding: 16px 16px 8px;
+  }
+
+  main {
+    padding: 12px 16px 48px;
+  }
+
+  .field-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .new-idea-card button[type="submit"] {
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+  }
+
+  button {
+    padding: 10px 14px;
+  }
 }
