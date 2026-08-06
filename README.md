@@ -140,11 +140,14 @@ upgrade head`, and restarts the service. Needs these repo secrets set once
 
 - Only `name` is required on an idea - everything else (description, URL,
   date) is optional and can be filled in later.
-- The date field is directly editable from the list view (a native date
-  input on each card) - no separate edit mode needed just to change when an
-  idea might happen.
-- Editing name/description/URL is done via the idea's name, which opens an
-  inline edit form.
+- Ideas are collapsed-by-default accordion cards - the same pattern as the
+  jobs admin page in time-management (`jobs.html`/`jobs.js`): a single-line
+  summary (title, source domain, date) that expands in place into the full
+  edit form, rather than a separate view/edit mode or a modal. This keeps a
+  long list scannable while still making every field editable.
+- "Add Idea" is a toggle button that reveals an inline add form (again
+  mirroring the jobs admin page's "+ Add New Job Opportunity"), not a modal.
 - The "Fetch preview" button only appears when an idea has a URL, and calls
   `POST /api/ideas/{id}/scrape`. It can be re-run any time (e.g. after a
-  transient failure) via "Re-fetch preview".
+  transient failure) via "Re-fetch preview", and lives inside the expanded
+  card alongside the scraped preview (if any).

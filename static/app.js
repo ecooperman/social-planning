@@ -16,9 +16,31 @@ async function fetchJSON(url, options) {
   return res.json();
 }
 
+function showMessage(text, kind) {
+  const el = document.getElementById("idea-message");
+  el.textContent = text;
+  el.className = "idea-message " + kind;
+  clearTimeout(showMessage._t);
+  showMessage._t = setTimeout(() => el.classList.add("hidden"), 4000);
+}
+
 function toISODate(isoDateTime) {
   if (!isoDateTime) return "";
   return isoDateTime.slice(0, 10);
+}
+
+function formatDateBadge(isoDateTime) {
+  if (!isoDateTime) return null;
+  const [y, m, d] = isoDateTime.slice(0, 10).split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+function domainFromUrl(url) {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch (e) {
+    return null;
+  }
 }
 
 function el(tag, attrs = {}, children = []) {
@@ -48,75 +70,152 @@ function renderIdeas(ideas) {
   count.textContent = ideas.length ? `${ideas.length}` : "";
   emptyState.hidden = ideas.length !== 0;
   for (const idea of ideas) {
-    list.appendChild(renderCard(idea));
+    list.appendChild(ideaCardElement(idea));
   }
 }
 
-function renderCard(idea) {
-  const card = el("div", { class: "idea-card", "data-id": idea.id });
+// Each idea is a collapsed-by-default accordion: a single-line summary row
+// (title, source domain, date) that expands into the full edit form in
+// place - no separate "view" vs "edit" mode, and no modal. This mirrors the
+// jobs admin page (jobs.html/jobs.js) in time-management, which solves the
+// same "lots of rows, only show the full form for the one you're touching"
+// problem the same way.
+function ideaCardElement(idea, { expanded = false } = {}) {
+  const card = el("div", { class: "idea-card" + (expanded ? " expanded" : ""), "data-id": idea.id });
 
-  // --- header: name (editable inline) + delete ---
-  const nameEl = el("span", { class: "idea-name", text: idea.name });
-  nameEl.addEventListener("click", () => enterEditMode(card, idea));
+  const summary = el("button", { type: "button", class: "idea-summary", "aria-expanded": String(expanded) });
+  summary.appendChild(el("span", { class: "idea-summary-title", text: idea.name }));
+
+  const domain = idea.url ? domainFromUrl(idea.url) : null;
+  if (domain) {
+    const domainLink = el("a", {
+      class: "idea-summary-domain",
+      href: idea.url,
+      target: "_blank",
+      rel: "noopener noreferrer",
+      text: domain,
+    });
+    // Opening the source link shouldn't also toggle the accordion.
+    domainLink.addEventListener("click", (e) => e.stopPropagation());
+    summary.appendChild(domainLink);
+  }
+
+  const dateLabel = formatDateBadge(idea.event_date);
+  if (dateLabel) {
+    summary.appendChild(el("span", { class: "idea-summary-date", text: dateLabel }));
+  }
+
+  summary.appendChild(el("span", { class: "idea-chevron", "aria-hidden": "true", text: "▸" }));
+
+  const details = el("div", { class: "idea-details" + (expanded ? "" : " hidden") });
+
+  summary.addEventListener("click", () => {
+    const isExpanded = card.classList.toggle("expanded");
+    details.classList.toggle("hidden", !isExpanded);
+    summary.setAttribute("aria-expanded", String(isExpanded));
+  });
+
+  card.append(summary, details);
+  details.appendChild(buildIdeaDetails(card, idea));
+  return card;
+}
+
+function buildIdeaDetails(card, idea) {
+  const wrap = el("div", { class: "idea-details-inner" });
+
+  const nameInput = el("input", { type: "text", value: idea.name, required: "required" });
+  const descInput = el("textarea", { rows: "2" });
+  descInput.value = idea.description || "";
+  const urlInput = el("input", { type: "url", value: idea.url || "" });
+  const dateInput = el("input", { type: "date", value: toISODate(idea.event_date) });
+
+  const fields = el("div", { class: "idea-fields" }, [
+    el("div", { class: "field" }, [el("label", { text: "Name" }), nameInput]),
+    el("div", { class: "field" }, [el("label", { text: "Description" }), descInput]),
+    el("div", { class: "field" }, [el("label", { text: "URL" }), urlInput]),
+    el("div", { class: "field" }, [el("label", { text: "Date" }), dateInput]),
+  ]);
+  wrap.appendChild(fields);
+
+  if (idea.url) {
+    wrap.appendChild(buildScrapeSection(card, idea));
+  }
+
+  const actions = el("div", { class: "idea-actions" });
 
   const deleteBtn = el("button", {
-    class: "icon-btn delete-btn",
-    title: "Delete idea",
-    text: "×",
-    onclick: () => deleteIdea(idea.id),
+    type: "button",
+    class: "danger-btn",
+    text: "Delete",
+    onclick: async () => {
+      if (!confirm(`Delete "${idea.name}"?`)) return;
+      await fetchJSON(`${API_BASE}/${idea.id}`, { method: "DELETE" });
+      card.remove();
+      showMessage(`Deleted "${idea.name}".`, "success");
+      const count = document.getElementById("idea-count");
+      const remaining = document.querySelectorAll(".idea-card").length;
+      count.textContent = remaining ? `${remaining}` : "";
+      document.getElementById("empty-state").hidden = remaining !== 0;
+    },
   });
 
-  card.appendChild(el("div", { class: "idea-header" }, [nameEl, deleteBtn]));
-
-  // --- date row: always-editable date input, per requirement ---
-  const dateInput = el("input", {
-    type: "date",
-    class: "date-input",
-    value: toISODate(idea.event_date),
+  const saveBtn = el("button", {
+    type: "button",
+    class: "save-btn",
+    text: "Save",
+    onclick: async () => {
+      const name = nameInput.value.trim();
+      if (!name) {
+        showMessage("Name is required.", "error");
+        return;
+      }
+      try {
+        const updated = await fetchJSON(`${API_BASE}/${idea.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name,
+            description: descInput.value.trim() || null,
+            url: urlInput.value.trim() || null,
+            event_date: dateInput.value ? `${dateInput.value}T00:00:00` : null,
+          }),
+        });
+        showMessage(`Saved "${name}".`, "success");
+        card.replaceWith(ideaCardElement(updated, { expanded: true }));
+      } catch (err) {
+        showMessage(err.message, "error");
+      }
+    },
   });
-  dateInput.addEventListener("change", async () => {
-    const updated = await fetchJSON(`${API_BASE}/${idea.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ event_date: dateInput.value ? `${dateInput.value}T00:00:00` : null }),
-    });
-    Object.assign(idea, updated);
+
+  actions.append(deleteBtn, saveBtn);
+  wrap.appendChild(actions);
+  return wrap;
+}
+
+function buildScrapeSection(card, idea) {
+  const section = el("div", { class: "idea-scrape-section" });
+
+  const scrapeBtn = el("button", {
+    type: "button",
+    class: "scrape-btn",
+    text: idea.scrape_status === "not_started" ? "Fetch preview" : "Re-fetch preview",
+    onclick: async (e) => {
+      e.target.disabled = true;
+      e.target.textContent = "Fetching...";
+      try {
+        const updated = await fetchJSON(`${API_BASE}/${idea.id}/scrape`, { method: "POST" });
+        card.replaceWith(ideaCardElement(updated, { expanded: true }));
+      } catch (err) {
+        e.target.disabled = false;
+        e.target.textContent = "Fetch preview";
+        showMessage(`Preview fetch failed: ${err.message}`, "error");
+      }
+    },
   });
-  card.appendChild(el("div", { class: "idea-date-row" }, [el("label", { text: "Date" }), dateInput]));
-
-  // --- description ---
-  if (idea.description) {
-    card.appendChild(el("p", { class: "idea-description", text: idea.description }));
-  }
-
-  // --- url + scrape controls ---
-  if (idea.url) {
-    const urlRow = el("div", { class: "idea-url-row" });
-    urlRow.appendChild(el("a", { href: idea.url, target: "_blank", rel: "noopener noreferrer", class: "idea-url", text: idea.url }));
-    const scrapeBtn = el("button", {
-      class: "scrape-btn",
-      text: idea.scrape_status === "not_started" ? "Fetch preview" : "Re-fetch preview",
-      onclick: async (e) => {
-        e.target.disabled = true;
-        e.target.textContent = "Fetching...";
-        try {
-          const updated = await fetchJSON(`${API_BASE}/${idea.id}/scrape`, { method: "POST" });
-          Object.assign(idea, updated);
-          card.replaceWith(renderCard(idea));
-        } catch (err) {
-          e.target.disabled = false;
-          e.target.textContent = "Fetch preview";
-          alert(`Scrape failed: ${err.message}`);
-        }
-      },
-    });
-    urlRow.appendChild(scrapeBtn);
-    card.appendChild(urlRow);
-
-    card.appendChild(renderScrapeStatus(idea));
-  }
-
-  return card;
+  section.appendChild(scrapeBtn);
+  section.appendChild(renderScrapeStatus(idea));
+  return section;
 }
 
 function renderScrapeStatus(idea) {
@@ -140,67 +239,49 @@ function renderScrapeStatus(idea) {
   return el("div", { class: "scrape-note", text: "" });
 }
 
-function enterEditMode(card, idea) {
-  card.innerHTML = "";
+function initAddIdeaForm() {
+  const form = document.getElementById("new-idea-form");
+  const showBtn = document.getElementById("show-add-idea");
+  const cancelBtn = document.getElementById("cancel-add-idea");
 
-  const nameInput = el("input", { type: "text", class: "edit-input", value: idea.name, required: "required" });
-  const descInput = el("textarea", { class: "edit-input", rows: "2" }, [idea.description || ""]);
-  descInput.value = idea.description || "";
-  const urlInput = el("input", { type: "url", class: "edit-input", value: idea.url || "" });
+  showBtn.addEventListener("click", () => {
+    form.classList.remove("hidden");
+    showBtn.classList.add("hidden");
+    document.getElementById("new-name").focus();
+  });
 
-  const saveBtn = el("button", {
-    class: "save-btn",
-    text: "Save",
-    onclick: async () => {
-      if (!nameInput.value.trim()) {
-        alert("Name is required");
-        return;
-      }
-      const updated = await fetchJSON(`${API_BASE}/${idea.id}`, {
-        method: "PATCH",
+  cancelBtn.addEventListener("click", () => {
+    form.reset();
+    form.classList.add("hidden");
+    showBtn.classList.remove("hidden");
+  });
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const name = form.name.value.trim();
+    if (!name) return;
+    const payload = {
+      name,
+      description: form.description.value.trim() || null,
+      url: form.url.value.trim() || null,
+      event_date: form.event_date.value ? `${form.event_date.value}T00:00:00` : null,
+    };
+    try {
+      await fetchJSON(API_BASE, {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: nameInput.value.trim(),
-          description: descInput.value.trim() || null,
-          url: urlInput.value.trim() || null,
-        }),
+        body: JSON.stringify(payload),
       });
-      Object.assign(idea, updated);
-      card.replaceWith(renderCard(idea));
-    },
+      form.reset();
+      form.classList.add("hidden");
+      showBtn.classList.remove("hidden");
+      showMessage(`Added "${name}".`, "success");
+      loadIdeas();
+    } catch (err) {
+      showMessage(err.message, "error");
+    }
   });
-  const cancelBtn = el("button", { class: "cancel-btn", text: "Cancel", onclick: () => card.replaceWith(renderCard(idea)) });
-
-  card.appendChild(el("div", { class: "field" }, [el("label", { text: "Name" }), nameInput]));
-  card.appendChild(el("div", { class: "field" }, [el("label", { text: "Description" }), descInput]));
-  card.appendChild(el("div", { class: "field" }, [el("label", { text: "URL" }), urlInput]));
-  card.appendChild(el("div", { class: "edit-actions" }, [saveBtn, cancelBtn]));
 }
 
-async function deleteIdea(id) {
-  if (!confirm("Delete this idea?")) return;
-  await fetchJSON(`${API_BASE}/${id}`, { method: "DELETE" });
-  loadIdeas();
-}
-
-document.getElementById("new-idea-form").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const form = e.target;
-  const name = form.name.value.trim();
-  if (!name) return;
-  const payload = {
-    name,
-    description: form.description.value.trim() || null,
-    url: form.url.value.trim() || null,
-    event_date: form.event_date.value ? `${form.event_date.value}T00:00:00` : null,
-  };
-  await fetchJSON(API_BASE, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  form.reset();
-  loadIdeas();
-});
-
+initAddIdeaForm();
 loadIdeas().catch((err) => console.error("Failed to load ideas", err));

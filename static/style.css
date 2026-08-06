@@ -29,14 +29,6 @@ h2 {
   margin: 0 0 12px;
 }
 
-.new-idea-card {
-  background: #fff;
-  border: 1px solid #e3e1db;
-  border-radius: 10px;
-  padding: 20px;
-  margin-bottom: 32px;
-}
-
 .field {
   margin-bottom: 12px;
   display: flex;
@@ -99,9 +91,62 @@ button {
   font-weight: 600;
 }
 
-.new-idea-card button[type="submit"] {
-  background: #2b6f5c;
+/* --- feedback bar, mirrors the admin-message pattern in time-management --- */
+
+.idea-message {
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+.idea-message.success {
+  background: #e6f4ea;
+  color: #1e7a34;
+}
+
+.idea-message.error {
+  background: #fbe9e7;
+  color: #c0442f;
+}
+
+.idea-message.hidden {
+  display: none;
+}
+
+/* --- add idea: collapsed by default behind a toggle button, same as the
+   "+ Add New Job Opportunity" pattern in the jobs admin page --- */
+
+.add-idea-toggle {
+  display: block;
+  width: 100%;
+  background: #2b2b2b;
   color: #fff;
+  padding: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.idea-add-card {
+  border-left: 4px solid #2b6f5c;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.idea-add-card.hidden {
+  display: none;
+}
+
+.idea-actions {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.idea-actions button {
+  padding: 10px;
 }
 
 .ideas-header {
@@ -118,7 +163,7 @@ button {
 .ideas-list {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 10px;
 }
 
 .empty-state {
@@ -126,79 +171,114 @@ button {
   font-style: italic;
 }
 
+/* --- idea accordion cards, mirroring jobs.html/jobs.js: a single-line
+   summary row that's the entire footprint of the card until expanded --- */
+
 .idea-card {
   background: #fff;
   border: 1px solid #e3e1db;
   border-radius: 10px;
-  padding: 16px 18px;
+  overflow: hidden;
 }
 
-.idea-header {
+.idea-summary {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   gap: 8px;
-}
-
-.idea-name {
-  font-size: 17px;
-  font-weight: 600;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 14px 16px;
+  font: inherit;
+  color: inherit;
+  text-align: left;
   cursor: pointer;
 }
 
-.idea-name:hover {
-  text-decoration: underline;
-  text-decoration-style: dotted;
-}
-
-.icon-btn {
-  background: transparent;
-  color: #8a867c;
-  font-size: 18px;
-  line-height: 1;
-  padding: 2px 6px;
-}
-
-.icon-btn:hover {
-  color: #c0442f;
-}
-
-.idea-date-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 8px 0;
-}
-
-.idea-date-row label {
-  margin: 0;
-}
-
-.idea-description {
-  margin: 8px 0;
-  color: #4a473f;
-  white-space: pre-wrap;
-}
-
-.idea-url-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 8px;
-}
-
-.idea-url {
-  color: #2b6f5c;
-  text-decoration: none;
-  font-size: 13px;
+.idea-summary-title {
+  flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: 320px;
+  font-weight: 600;
+  font-size: 15px;
 }
 
-.idea-url:hover {
+.idea-summary-domain {
+  flex-shrink: 0;
+  font-size: 11px;
+  color: #6b675f;
+  background: #f2f0ea;
+  text-decoration: none;
+  padding: 3px 8px;
+  border-radius: 10px;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.idea-summary-domain:hover {
   text-decoration: underline;
+}
+
+.idea-summary-date {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: #1e7a34;
+  background: #e6f4ea;
+  padding: 3px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+.idea-chevron {
+  flex-shrink: 0;
+  color: #8a867c;
+  transition: transform 0.15s ease;
+}
+
+.idea-card.expanded .idea-chevron {
+  transform: rotate(90deg);
+}
+
+.idea-details.hidden {
+  display: none;
+}
+
+.idea-details-inner {
+  padding: 4px 16px 16px;
+  border-top: 1px solid #e3e1db;
+  padding-top: 14px;
+}
+
+.idea-fields {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.danger-btn {
+  background: #fbe9e7;
+  color: #c0442f;
+}
+
+.save-btn {
+  background: #2b6f5c;
+  color: #fff;
+}
+
+.cancel-btn {
+  background: #eee;
+  color: #4a473f;
+}
+
+.idea-scrape-section {
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px dashed #e3e1db;
 }
 
 .scrape-btn {
@@ -252,20 +332,19 @@ button {
   color: #c0442f;
 }
 
-.edit-actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 4px;
-}
+@media (min-width: 640px) {
+  .idea-fields {
+    grid-template-columns: 1fr 1fr;
+  }
 
-.save-btn {
-  background: #2b6f5c;
-  color: #fff;
-}
+  .idea-actions {
+    flex-direction: row;
+    justify-content: flex-end;
+  }
 
-.cancel-btn {
-  background: #eee;
-  color: #4a473f;
+  .idea-actions button {
+    padding: 8px 14px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -282,10 +361,8 @@ button {
     gap: 12px;
   }
 
-  .new-idea-card button[type="submit"] {
-    width: 100%;
-    padding: 12px;
-    font-size: 16px;
+  .idea-summary-domain {
+    display: none;
   }
 
   button {
