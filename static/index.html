@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Social Planning</title>
+  <link rel="stylesheet" href="https://static.evancooperman.com/theme.css" />
   <link rel="stylesheet" href="style.css" />
 
   <!-- Home screen / installed-app support -->
@@ -20,11 +21,11 @@
   </header>
 
   <main>
-    <div id="idea-message" class="idea-message hidden"></div>
+    <div id="page-message" class="page-message hidden"></div>
 
-    <button id="show-add-idea" type="button" class="add-idea-toggle">+ Add Idea</button>
+    <button id="show-add-idea" type="button" class="add-toggle">+ Add Idea</button>
 
-    <form id="new-idea-form" class="idea-card idea-add-card hidden">
+    <form id="new-idea-form" class="add-card hidden">
       <div class="field">
         <label for="new-name">Name <span class="required">*</span></label>
         <input id="new-name" name="name" type="text" required placeholder="e.g. Sunset picnic at the park" />
@@ -43,22 +44,23 @@
           <input id="new-date" name="event_date" type="date" />
         </div>
       </div>
-      <div class="idea-actions">
+      <div class="item-actions">
         <button type="submit" class="save-btn">Add idea</button>
         <button type="button" id="cancel-add-idea" class="cancel-btn">Cancel</button>
       </div>
     </form>
 
     <section>
-      <div class="ideas-header">
+      <div class="list-header">
         <h2>Ideas</h2>
-        <span id="idea-count" class="idea-count"></span>
+        <span id="idea-count" class="list-count"></span>
       </div>
-      <div id="ideas-list" class="ideas-list"></div>
+      <div id="ideas-list" class="item-list"></div>
       <p id="empty-state" class="empty-state" hidden>No ideas yet - add one above to get started.</p>
     </section>
   </main>
 
+  <script src="https://static.evancooperman.com/theme.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

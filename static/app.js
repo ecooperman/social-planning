@@ -16,14 +16,6 @@ async function fetchJSON(url, options) {
   return res.json();
 }
 
-function showMessage(text, kind) {
-  const el = document.getElementById("idea-message");
-  el.textContent = text;
-  el.className = "idea-message " + kind;
-  clearTimeout(showMessage._t);
-  showMessage._t = setTimeout(() => el.classList.add("hidden"), 4000);
-}
-
 function toISODate(isoDateTime) {
   if (!isoDateTime) return "";
   return isoDateTime.slice(0, 10);
@@ -41,20 +33,6 @@ function domainFromUrl(url) {
   } catch (e) {
     return null;
   }
-}
-
-function el(tag, attrs = {}, children = []) {
-  const node = document.createElement(tag);
-  for (const [key, value] of Object.entries(attrs)) {
-    if (key === "class") node.className = value;
-    else if (key === "text") node.textContent = value;
-    else if (key.startsWith("on") && typeof value === "function") node.addEventListener(key.slice(2), value);
-    else if (value !== null && value !== undefined) node.setAttribute(key, value);
-  }
-  for (const child of [].concat(children)) {
-    if (child) node.appendChild(typeof child === "string" ? document.createTextNode(child) : child);
-  }
-  return node;
 }
 
 async function loadIdeas() {
@@ -81,15 +59,15 @@ function renderIdeas(ideas) {
 // same "lots of rows, only show the full form for the one you're touching"
 // problem the same way.
 function ideaCardElement(idea, { expanded = false } = {}) {
-  const card = el("div", { class: "idea-card" + (expanded ? " expanded" : ""), "data-id": idea.id });
+  const card = Theme.el("div", { class: "item-card" + (expanded ? " expanded" : ""), "data-id": idea.id });
 
-  const summary = el("button", { type: "button", class: "idea-summary", "aria-expanded": String(expanded) });
-  summary.appendChild(el("span", { class: "idea-summary-title", text: idea.name }));
+  const summary = Theme.el("button", { type: "button", class: "item-summary", "aria-expanded": String(expanded) });
+  summary.appendChild(Theme.el("span", { class: "item-summary-title", text: idea.name }));
 
   const domain = idea.url ? domainFromUrl(idea.url) : null;
   if (domain) {
-    const domainLink = el("a", {
-      class: "idea-summary-domain",
+    const domainLink = Theme.el("a", {
+      class: "item-badge item-badge-domain",
       href: idea.url,
       target: "_blank",
       rel: "noopener noreferrer",
@@ -102,18 +80,14 @@ function ideaCardElement(idea, { expanded = false } = {}) {
 
   const dateLabel = formatDateBadge(idea.event_date);
   if (dateLabel) {
-    summary.appendChild(el("span", { class: "idea-summary-date", text: dateLabel }));
+    summary.appendChild(Theme.el("span", { class: "item-badge item-badge-date", text: dateLabel }));
   }
 
-  summary.appendChild(el("span", { class: "idea-chevron", "aria-hidden": "true", text: "▸" }));
+  summary.appendChild(Theme.el("span", { class: "item-chevron", "aria-hidden": "true", text: "▸" }));
 
-  const details = el("div", { class: "idea-details" + (expanded ? "" : " hidden") });
+  const details = Theme.el("div", { class: "item-details" + (expanded ? "" : " hidden") });
 
-  summary.addEventListener("click", () => {
-    const isExpanded = card.classList.toggle("expanded");
-    details.classList.toggle("hidden", !isExpanded);
-    summary.setAttribute("aria-expanded", String(isExpanded));
-  });
+  Theme.wireAccordionToggle(card, summary, details);
 
   card.append(summary, details);
   details.appendChild(buildIdeaDetails(card, idea));
@@ -121,19 +95,19 @@ function ideaCardElement(idea, { expanded = false } = {}) {
 }
 
 function buildIdeaDetails(card, idea) {
-  const wrap = el("div", { class: "idea-details-inner" });
+  const wrap = Theme.el("div", { class: "item-details-inner" });
 
-  const nameInput = el("input", { type: "text", value: idea.name, required: "required" });
-  const descInput = el("textarea", { rows: "2" });
+  const nameInput = Theme.el("input", { type: "text", value: idea.name, required: "required" });
+  const descInput = Theme.el("textarea", { rows: "2" });
   descInput.value = idea.description || "";
-  const urlInput = el("input", { type: "url", value: idea.url || "" });
-  const dateInput = el("input", { type: "date", value: toISODate(idea.event_date) });
+  const urlInput = Theme.el("input", { type: "url", value: idea.url || "" });
+  const dateInput = Theme.el("input", { type: "date", value: toISODate(idea.event_date) });
 
-  const fields = el("div", { class: "idea-fields" }, [
-    el("div", { class: "field" }, [el("label", { text: "Name" }), nameInput]),
-    el("div", { class: "field" }, [el("label", { text: "Description" }), descInput]),
-    el("div", { class: "field" }, [el("label", { text: "URL" }), urlInput]),
-    el("div", { class: "field" }, [el("label", { text: "Date" }), dateInput]),
+  const fields = Theme.el("div", { class: "item-fields" }, [
+    Theme.el("div", { class: "field" }, [Theme.el("label", { text: "Name" }), nameInput]),
+    Theme.el("div", { class: "field" }, [Theme.el("label", { text: "Description" }), descInput]),
+    Theme.el("div", { class: "field" }, [Theme.el("label", { text: "URL" }), urlInput]),
+    Theme.el("div", { class: "field" }, [Theme.el("label", { text: "Date" }), dateInput]),
   ]);
   wrap.appendChild(fields);
 
@@ -141,9 +115,9 @@ function buildIdeaDetails(card, idea) {
     wrap.appendChild(buildScrapeSection(card, idea));
   }
 
-  const actions = el("div", { class: "idea-actions" });
+  const actions = Theme.el("div", { class: "item-actions" });
 
-  const deleteBtn = el("button", {
+  const deleteBtn = Theme.el("button", {
     type: "button",
     class: "danger-btn",
     text: "Delete",
@@ -151,22 +125,22 @@ function buildIdeaDetails(card, idea) {
       if (!confirm(`Delete "${idea.name}"?`)) return;
       await fetchJSON(`${API_BASE}/${idea.id}`, { method: "DELETE" });
       card.remove();
-      showMessage(`Deleted "${idea.name}".`, "success");
+      Theme.showMessage(`Deleted "${idea.name}".`, "success");
       const count = document.getElementById("idea-count");
-      const remaining = document.querySelectorAll(".idea-card").length;
+      const remaining = document.querySelectorAll(".item-card").length;
       count.textContent = remaining ? `${remaining}` : "";
       document.getElementById("empty-state").hidden = remaining !== 0;
     },
   });
 
-  const saveBtn = el("button", {
+  const saveBtn = Theme.el("button", {
     type: "button",
     class: "save-btn",
     text: "Save",
     onclick: async () => {
       const name = nameInput.value.trim();
       if (!name) {
-        showMessage("Name is required.", "error");
+        Theme.showMessage("Name is required.", "error");
         return;
       }
       try {
@@ -180,10 +154,10 @@ function buildIdeaDetails(card, idea) {
             event_date: dateInput.value ? `${dateInput.value}T00:00:00` : null,
           }),
         });
-        showMessage(`Saved "${name}".`, "success");
+        Theme.showMessage(`Saved "${name}".`, "success");
         card.replaceWith(ideaCardElement(updated, { expanded: true }));
       } catch (err) {
-        showMessage(err.message, "error");
+        Theme.showMessage(err.message, "error");
       }
     },
   });
@@ -194,9 +168,9 @@ function buildIdeaDetails(card, idea) {
 }
 
 function buildScrapeSection(card, idea) {
-  const section = el("div", { class: "idea-scrape-section" });
+  const section = Theme.el("div", { class: "scrape-section" });
 
-  const scrapeBtn = el("button", {
+  const scrapeBtn = Theme.el("button", {
     type: "button",
     class: "scrape-btn",
     text: idea.scrape_status === "not_started" ? "Fetch preview" : "Re-fetch preview",
@@ -209,7 +183,7 @@ function buildScrapeSection(card, idea) {
       } catch (err) {
         e.target.disabled = false;
         e.target.textContent = "Fetch preview";
-        showMessage(`Preview fetch failed: ${err.message}`, "error");
+        Theme.showMessage(`Preview fetch failed: ${err.message}`, "error");
       }
     },
   });
@@ -220,23 +194,23 @@ function buildScrapeSection(card, idea) {
 
 function renderScrapeStatus(idea) {
   if (idea.scrape_status === "success") {
-    const preview = el("div", { class: "scrape-preview" });
+    const preview = Theme.el("div", { class: "scrape-preview" });
     if (idea.scraped_image_url) {
-      preview.appendChild(el("img", { src: idea.scraped_image_url, class: "scrape-image", alt: "" }));
+      preview.appendChild(Theme.el("img", { src: idea.scraped_image_url, class: "scrape-image", alt: "" }));
     }
-    const textWrap = el("div", { class: "scrape-text" });
-    if (idea.scraped_title) textWrap.appendChild(el("div", { class: "scrape-title", text: idea.scraped_title }));
-    if (idea.scraped_description) textWrap.appendChild(el("div", { class: "scrape-description", text: idea.scraped_description }));
+    const textWrap = Theme.el("div", { class: "scrape-text" });
+    if (idea.scraped_title) textWrap.appendChild(Theme.el("div", { class: "scrape-title", text: idea.scraped_title }));
+    if (idea.scraped_description) textWrap.appendChild(Theme.el("div", { class: "scrape-description", text: idea.scraped_description }));
     preview.appendChild(textWrap);
     return preview;
   }
   if (idea.scrape_status === "failed") {
-    return el("div", { class: "scrape-note scrape-error", text: `Preview fetch failed: ${idea.scrape_error || "unknown error"}` });
+    return Theme.el("div", { class: "scrape-note scrape-error", text: `Preview fetch failed: ${idea.scrape_error || "unknown error"}` });
   }
   if (idea.scrape_status === "unsupported") {
-    return el("div", { class: "scrape-note", text: "No scraper available for this URL yet." });
+    return Theme.el("div", { class: "scrape-note", text: "No scraper available for this URL yet." });
   }
-  return el("div", { class: "scrape-note", text: "" });
+  return Theme.el("div", { class: "scrape-note", text: "" });
 }
 
 function initAddIdeaForm() {
@@ -275,10 +249,10 @@ function initAddIdeaForm() {
       form.reset();
       form.classList.add("hidden");
       showBtn.classList.remove("hidden");
-      showMessage(`Added "${name}".`, "success");
+      Theme.showMessage(`Added "${name}".`, "success");
       loadIdeas();
     } catch (err) {
-      showMessage(err.message, "error");
+      Theme.showMessage(err.message, "error");
     }
   });
 }
