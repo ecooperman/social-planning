@@ -64,6 +64,7 @@ def import_from_instagram(request: schemas.InstagramImportRequest, db: Session =
                     url=permalink,
                     location_id=request.location_id,
                 ),
+                imported=True,
             )
             created_names.append(place.name)
         existing_urls.add(permalink)

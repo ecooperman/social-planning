@@ -177,8 +177,8 @@ def get_plan(db: Session, plan_id: int):
     return db.query(models.Plan).filter(models.Plan.id == plan_id).first()
 
 
-def create_plan(db: Session, plan: schemas.PlanCreate):
-    db_plan = models.Plan(**plan.model_dump())
+def create_plan(db: Session, plan: schemas.PlanCreate, imported: bool = False):
+    db_plan = models.Plan(**plan.model_dump(), imported=imported)
     db.add(db_plan)
     db.commit()
     db.refresh(db_plan)

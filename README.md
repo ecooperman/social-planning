@@ -61,6 +61,11 @@ Endpoints:
   the existing country/region/city it matched). Needs `GOOGLE_MAPS_API_KEY`
   with Places API (New) enabled; without it the dropdowns alone still
   work. A `place_id` can only be added once (409).
+- Plans carry an `imported` flag - true for plans the Instagram import
+  created, false for ones added on the plans page. The plans page filters
+  by location, source (imported / added by hand), trip status, and a text
+  search, all client-side, and Export CSV downloads exactly the plans the
+  filters currently show (UTF-8 with a BOM, so Excel opens it cleanly).
 - `POST /api/instagram-import` - `{posts: [{permalink, caption}], location_id}`
   from the web-capture Chrome extension's saved-collection import: Claude
   (`app/ai_extraction.py`) pulls the real places out of each caption and

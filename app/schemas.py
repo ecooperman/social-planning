@@ -128,6 +128,7 @@ class Plan(PlanBase):
 
     id: int
     location: Optional[Location] = None
+    imported: bool = False
     scrape_status: ScrapeStatus
     scraped_title: Optional[str] = None
     scraped_description: Optional[str] = None

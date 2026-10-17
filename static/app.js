@@ -57,20 +57,182 @@ function linksForPlan(planId) {
 }
 
 async function loadPlans() {
-  const plans = await Global.fetchJSON(API_BASE);
-  renderPlans(plans);
+  allPlans = await Global.fetchJSON(API_BASE);
+  initFilters();
+  renderPlans();
 }
 
-function renderPlans(plans) {
-  const list = document.getElementById("plans-list");
-  const emptyState = document.getElementById("empty-state");
-  const count = document.getElementById("plan-count");
-  list.innerHTML = "";
-  count.textContent = plans.length ? `${plans.length}` : "";
-  emptyState.hidden = plans.length !== 0;
-  for (const plan of plans) {
-    list.appendChild(planCardElement(plan));
+// --- filters ----------------------------------------------------------------
+//
+// All client-side over the full list (it's loaded whole anyway), same as
+// trip-planning's places page: each multiselect narrows by its own field,
+// empty means "any", and they combine with AND. Search matches name and
+// description.
+
+let allPlans = [];
+const filters = { location: new Set(), source: new Set(), trips: new Set(), search: "" };
+const NO_LOCATION = "none";
+
+function onTrip(plan) {
+  return linksForPlan(plan.id).some((link) => link.trip_id);
+}
+
+function planMatches(plan) {
+  if (filters.location.size && !filters.location.has(plan.location_id == null ? NO_LOCATION : String(plan.location_id))) return false;
+  if (filters.source.size && !filters.source.has(plan.imported ? "imported" : "manual")) return false;
+  if (filters.trips.size && !filters.trips.has(onTrip(plan) ? "on" : "off")) return false;
+  if (filters.search) {
+    const haystack = `${plan.name} ${plan.description || ""}`.toLowerCase();
+    if (!haystack.includes(filters.search)) return false;
   }
+  return true;
+}
+
+function filtersActive() {
+  return filters.location.size > 0 || filters.source.size > 0 || filters.trips.size > 0 || filters.search !== "";
+}
+
+function renderPlans() {
+  const list = document.getElementById("plans-list");
+  list.innerHTML = "";
+  const shown = allPlans.filter(planMatches);
+  for (const plan of shown) list.appendChild(planCardElement(plan));
+  updatePlanCounts(shown.length);
+}
+
+function updatePlanCounts(shownCount = document.querySelectorAll("#plans-list .item-card").length) {
+  const count = document.getElementById("plan-count");
+  count.textContent = !allPlans.length ? "" : filtersActive() ? `${shownCount} of ${allPlans.length}` : `${allPlans.length}`;
+  document.getElementById("empty-state").hidden = allPlans.length !== 0;
+  document.getElementById("filtered-empty").hidden = !(allPlans.length > 0 && shownCount === 0 && filtersActive());
+}
+
+function filterMultiSelect(mountId, key, options, placeholder) {
+  const mount = document.getElementById(mountId);
+  mount.innerHTML = "";
+  // Drop any selection whose option no longer exists (e.g. a location that
+  // no plan uses any more) so it can't silently hide everything.
+  const valid = new Set(options.map((o) => String(o.value)));
+  filters[key] = new Set([...filters[key]].filter((v) => valid.has(v)));
+  mount.appendChild(
+    Global.buildMultiSelect({
+      options,
+      selected: [...filters[key]],
+      placeholder,
+      onChange: (selected) => {
+        filters[key] = new Set(selected);
+        renderPlans();
+      },
+    })
+  );
+}
+
+// Rebuilt after every full reload, so the location options track which
+// locations plans actually use.
+function initFilters() {
+  const used = new Map();
+  let anyWithout = false;
+  for (const plan of allPlans) {
+    if (plan.location) used.set(plan.location.id, plan.location.name);
+    else anyWithout = true;
+  }
+  const locationOptions = [...used.entries()]
+    .sort((a, b) => a[1].localeCompare(b[1]))
+    .map(([id, name]) => ({ value: id, label: name }));
+  if (anyWithout) locationOptions.push({ value: NO_LOCATION, label: "No location" });
+  filterMultiSelect("location-filter-mount", "location", locationOptions, "All locations");
+
+  filterMultiSelect(
+    "source-filter-mount",
+    "source",
+    [
+      { value: "imported", label: "Imported" },
+      { value: "manual", label: "Added by hand" },
+    ],
+    "All sources"
+  );
+
+  // Only meaningful when the trips app answered - see loadTripsLink.
+  const tripsMount = document.getElementById("trips-filter-mount");
+  if (tripsAvailable) {
+    filterMultiSelect(
+      "trips-filter-mount",
+      "trips",
+      [
+        { value: "on", label: "On a trip" },
+        { value: "off", label: "Not on a trip yet" },
+      ],
+      "Any trip status"
+    );
+  } else {
+    tripsMount.innerHTML = "";
+    filters.trips = new Set();
+  }
+}
+
+// --- export -----------------------------------------------------------------
+//
+// Exactly what the filters currently show, as a CSV built right here from
+// the loaded list (no server round trip, so it can't drift from what's on
+// screen). The leading byte-order mark makes Excel read it as UTF-8, so
+// accented names and emoji in Instagram captions come through intact.
+
+function csvCell(value) {
+  const text = value == null ? "" : String(value);
+  return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+}
+
+function exportPlans() {
+  const shown = allPlans.filter(planMatches);
+  if (!shown.length) {
+    Global.showMessage("No plans to export with the current filters.", "error");
+    return;
+  }
+  const header = ["Name", "Description", "URL", "Location", "City", "State / region", "Country", "Date", "Source", "Trips", "Added"];
+  const rows = shown.map((plan) => {
+    const loc = plan.location;
+    const trips = [...new Set(linksForPlan(plan.id).map((l) => l.trip_location || "Activity (no trip)"))].join("; ");
+    return [
+      plan.name,
+      plan.description,
+      plan.url,
+      loc && loc.name,
+      loc && loc.city && loc.city.name,
+      loc && loc.region && loc.region.name,
+      loc && loc.country && loc.country.name,
+      Global.toISODate(plan.event_date),
+      plan.imported ? "Imported" : "Added by hand",
+      trips,
+      Global.toISODate(plan.created_at),
+    ];
+  });
+  const csv = "\ufeff" + [header, ...rows].map((row) => row.map(csvCell).join(",")).join("\r\n");
+
+  // Name the file after the one location filtered to, when it's just one.
+  const onlyLocation =
+    filters.location.size === 1 ? allPlans.find((p) => String(p.location_id) === [...filters.location][0])?.location?.name : null;
+  const slug = (onlyLocation || "plans").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const link = Global.el("a", {
+    href: URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" })),
+    download: `${slug}-${new Date().toISOString().slice(0, 10)}.csv`,
+  });
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+  Global.showMessage(`Exported ${shown.length} plan${shown.length === 1 ? "" : "s"}.`, "success");
+}
+
+function initSearch() {
+  const input = document.getElementById("plan-search");
+  let timer = null;
+  input.addEventListener("input", () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      filters.search = input.value.trim().toLowerCase();
+      renderPlans();
+    }, 200);
+  });
 }
 
 // Each plan is a collapsed-by-default accordion: a single-line summary row
@@ -162,11 +324,9 @@ function buildPlanDetails(card, plan) {
       if (!confirm(`Delete "${plan.name}"?`)) return;
       await Global.fetchJSON(`${API_BASE}/${plan.id}`, { method: "DELETE" });
       card.remove();
+      allPlans = allPlans.filter((p) => p.id !== plan.id);
       Global.showMessage(`Deleted "${plan.name}".`, "success");
-      const count = document.getElementById("plan-count");
-      const remaining = document.querySelectorAll(".item-card").length;
-      count.textContent = remaining ? `${remaining}` : "";
-      document.getElementById("empty-state").hidden = remaining !== 0;
+      updatePlanCounts();
     },
   });
 
@@ -193,6 +353,7 @@ function buildPlanDetails(card, plan) {
           }),
         });
         Global.showMessage(`Saved "${name}".`, "success");
+        allPlans = allPlans.map((p) => (p.id === updated.id ? updated : p));
         card.replaceWith(planCardElement(updated, { expanded: true }));
       } catch (err) {
         Global.showMessage(err.message, "error");
@@ -350,6 +511,8 @@ function initAddPlanForm() {
 }
 
 initAddPlanForm();
+initSearch();
+document.getElementById("export-plans").addEventListener("click", exportPlans);
 Promise.all([loadLocations(), loadTripsLink()])
   .then(loadPlans)
   .catch((err) => console.error("Failed to load plans", err));

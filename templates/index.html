@@ -60,9 +60,17 @@
       <div class="list-header">
         <h2>Plans</h2>
         <span id="plan-count" class="list-count"></span>
+        <button id="export-plans" type="button" class="secondary-btn" title="Download the plans currently shown as a CSV (opens in Excel)">Export CSV</button>
+      </div>
+      <div class="plan-filters">
+        <input id="plan-search" type="text" placeholder="Search plans…" aria-label="Search plans" />
+        <div id="location-filter-mount"></div>
+        <div id="source-filter-mount"></div>
+        <div id="trips-filter-mount"></div>
       </div>
       <div id="plans-list" class="item-list"></div>
       <p id="empty-state" class="empty-state" hidden>No plans yet - add one above to get started.</p>
+      <p id="filtered-empty" class="empty-state" hidden>No plans match the selected filters.</p>
     </section>
   </main>
 

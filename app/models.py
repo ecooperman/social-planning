@@ -1,7 +1,7 @@
 import enum
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, Enum, Float, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import Boolean, Column, DateTime, Enum, Float, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import relationship
 
 from .database import Base
@@ -117,6 +117,11 @@ class Plan(Base):
     url = Column(String, nullable=True)
     event_date = Column(DateTime, nullable=True)
     location_id = Column(Integer, ForeignKey("locations.id"), nullable=True)
+    # True for plans created by a bulk import (the web-capture extension's
+    # Instagram collection import, routers/instagram_import.py) rather than
+    # added by hand on the plans page - lets the list filter one from the
+    # other. Set by the importer only; not part of PlanCreate/PlanUpdate.
+    imported = Column(Boolean, nullable=False, default=False, server_default="0")
 
     scrape_status = Column(Enum(ScrapeStatus), nullable=False, default=ScrapeStatus.not_started)
     scraped_title = Column(String, nullable=True)
