@@ -32,8 +32,19 @@
       <div id="add-location-card" class="add-card hidden"></div>
 
       <div id="location-list" class="item-list"></div>
-      <p class="settings-note">Search to fill a location in from Google, or type the fields yourself. Names are unique (ignoring case), and a looked-up place can only be added once. You can't delete a location still set on a plan.</p>
+      <p class="settings-note">Search to fill a location in from Google, or pick its country, state and city yourself - choose an existing one or add a new one from each list. Names are unique (ignoring case), and a looked-up place can only be added once. You can't delete a location still set on a plan.</p>
     </section>
+
+    <details class="settings-section geo-admin" id="geo-admin">
+      <summary><h2>Countries, states &amp; cities</h2></summary>
+      <p class="settings-note">These are added from the location form. Fix a spelling here and it changes everywhere; something can only be deleted once nothing uses it.</p>
+      <h3>Countries</h3>
+      <div id="country-list" class="settings-list"></div>
+      <h3>States / regions</h3>
+      <div id="region-list" class="settings-list"></div>
+      <h3>Cities</h3>
+      <div id="city-list" class="settings-list"></div>
+    </details>
   </main>
 
   <script src="{{ shared_assets_base }}/theme.js"></script>

@@ -44,11 +44,24 @@ def lookup(q: str):
 
 
 @router.get("/lookup/{place_id}", response_model=schemas.PlaceDetails)
-def lookup_details(place_id: str):
+def lookup_details(place_id: str, db: Session = Depends(get_db)):
     try:
-        return places.details(place_id)
+        details = places.details(place_id)
     except places.PlacesError as err:
         raise HTTPException(status_code=502, detail=str(err))
+    # Point the form at records that already exist, so a lookup reuses
+    # "United States" rather than offering to create it again.
+    country = crud.find_country(db, details.country) if details.country else None
+    region = crud.find_region(db, country.id, details.region) if country and details.region else None
+    city = (
+        crud.find_city(db, country.id, region.id if region else None, details.city)
+        if country and details.city
+        else None
+    )
+    details.country_id = country.id if country else None
+    details.region_id = region.id if region else None
+    details.city_id = city.id if city else None
+    return details
 
 
 @router.get("", response_model=List[schemas.Location])
@@ -60,7 +73,10 @@ def list_locations(db: Session = Depends(get_db)):
 def create_location(location: schemas.LocationCreate, db: Session = Depends(get_db)):
     location.name = _clean_name(db, location.name)
     _check_place(db, location.place_id)
-    return crud.create_location(db, location)
+    try:
+        return crud.create_location(db, location)
+    except crud.PlaceError as err:
+        raise HTTPException(status_code=400, detail=str(err))
 
 
 @router.patch("/{location_id}", response_model=schemas.Location)
@@ -68,7 +84,10 @@ def update_location(location_id: int, updates: schemas.LocationUpdate, db: Sessi
     if updates.name is not None:
         updates.name = _clean_name(db, updates.name, exclude_id=location_id)
     _check_place(db, updates.place_id, exclude_id=location_id)
-    location = crud.update_location(db, location_id, updates)
+    try:
+        location = crud.update_location(db, location_id, updates)
+    except crud.PlaceError as err:
+        raise HTTPException(status_code=400, detail=str(err))
     if location is None:
         raise HTTPException(status_code=404, detail="Location not found")
     return location

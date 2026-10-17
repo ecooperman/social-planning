@@ -1,7 +1,7 @@
 import enum
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, Enum, Float, ForeignKey, Integer, String
+from sqlalchemy import Column, DateTime, Enum, Float, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import relationship
 
 from .database import Base
@@ -14,11 +14,75 @@ class ScrapeStatus(str, enum.Enum):
     unsupported = "unsupported"
 
 
+class Country(Base):
+    """Top of the place hierarchy (country -> region -> city) that a
+    Location points into. Each level is its own managed list - picked from
+    a dropdown, or created in place from the location form / Google lookup -
+    so a place is spelled one way and filed under the right parent
+    everywhere. Names are unique ignoring case (enforced in crud)."""
+
+    __tablename__ = "countries"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String, nullable=False, unique=True)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    regions = relationship("Region", back_populates="country")
+
+
+class Region(Base):
+    """A state/province/prefecture - always inside one country. Called
+    "region" in code because most countries don't have states."""
+
+    __tablename__ = "regions"
+    __table_args__ = (UniqueConstraint("country_id", "name", name="uq_regions_country_name"),)
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String, nullable=False)
+    country_id = Column(Integer, ForeignKey("countries.id"), nullable=False)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    country = relationship("Country", back_populates="regions")
+
+
+class City(Base):
+    """Always inside one country, and inside one of its regions - except in
+    a country that has no regions at all (Singapore, Monaco), where
+    region_id is null. That rule is enforced when a city is created (see
+    crud.resolve_place), not here, since a country can gain its first
+    region after cities already exist under it."""
+
+    __tablename__ = "cities"
+    __table_args__ = (UniqueConstraint("country_id", "region_id", "name", name="uq_cities_parent_name"),)
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String, nullable=False)
+    country_id = Column(Integer, ForeignKey("countries.id"), nullable=False)
+    region_id = Column(Integer, ForeignKey("regions.id"), nullable=True)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    country = relationship("Country")
+    region = relationship("Region")
+
+
 class Location(Base):
     """A canonical place plans can be tagged with, managed on settings.html.
     Picked from a list rather than typed per plan, so "NYC" vs "New York"
     can't split one place's plans in two - which matters once
-    trip-planning starts asking for "every plan in <location>"."""
+    trip-planning starts asking for "every plan in <location>".
+
+    Where it is comes from the country -> region -> city hierarchy, at
+    whatever depth fits: Salem is a city, Napa Valley only a region,
+    Iceland only a country. country_id is required by the Settings form but
+    nullable here, so a quick name-only location (the web-capture
+    extension's "+ New location") can be filled in later.
+    """
 
     __tablename__ = "locations"
 
@@ -26,13 +90,9 @@ class Location(Base):
     # The label shown everywhere ("Salem, MA") - unique ignoring case.
     name = Column(String, nullable=False, unique=True)
 
-    # Where it actually is. Filled in by the Google place lookup on
-    # settings.html when that's available, or typed by hand when it isn't -
-    # so all optional. city is empty for places that aren't one (Napa
-    # Valley, a national park); region is the state/province/prefecture.
-    city = Column(String, nullable=True)
-    region = Column(String, nullable=True)
-    country = Column(String, nullable=True)
+    country_id = Column(Integer, ForeignKey("countries.id"), nullable=True)
+    region_id = Column(Integer, ForeignKey("regions.id"), nullable=True)
+    city_id = Column(Integer, ForeignKey("cities.id"), nullable=True)
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
     # Google's Place ID, set only by the lookup - the real "same place"
@@ -42,6 +102,10 @@ class Location(Base):
 
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    country = relationship("Country")
+    region = relationship("Region")
+    city = relationship("City")
 
 
 class Plan(Base):

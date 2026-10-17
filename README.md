@@ -47,13 +47,20 @@ Endpoints:
 - `POST /api/locations` / `PATCH /api/locations/{id}` - create or rename one
   (names are unique ignoring case - 409 on a clash)
 - `DELETE /api/locations/{id}` - 409 if any plan still uses it
-- Locations carry optional `city` / `region` / `country` / `latitude` /
-  `longitude` / `place_id`, typed by hand or filled in by the Google place
-  lookup on the Settings page: `GET /api/locations/lookup/available`,
-  `GET /api/locations/lookup?q=` (autocomplete), and
-  `GET /api/locations/lookup/{place_id}` (details). The lookup needs
-  `GOOGLE_MAPS_API_KEY` with Places API (New) enabled; without it the page
-  falls back to manual entry. A `place_id` can only be added once (409).
+- A location points into a country -> state/region -> city hierarchy
+  (`/api/countries`, `/api/regions?country_id=`, `/api/cities?region_id=`
+  or `?country_id=&no_region=true` - list, `PATCH` to rename, `DELETE`
+  when unused). Entries are created by saving a location: each level is
+  sent as an existing `*_id` or a `new_*` name, found-or-created under the
+  level above (`crud.resolve_place`). Country is required by the Settings
+  form; state and city are optional (Napa Valley has no city), and a city
+  sits directly under a country only if that country has no regions.
+- The optional Google place lookup fills every level in at once:
+  `GET /api/locations/lookup/available`, `GET /api/locations/lookup?q=`
+  (autocomplete), and `GET /api/locations/lookup/{place_id}` (details, with
+  the existing country/region/city it matched). Needs `GOOGLE_MAPS_API_KEY`
+  with Places API (New) enabled; without it the dropdowns alone still
+  work. A `place_id` can only be added once (409).
 - `POST /api/instagram-import` - `{posts: [{permalink, caption}], location_id}`
   from the web-capture Chrome extension's saved-collection import: Claude
   (`app/ai_extraction.py`) pulls the real places out of each caption and
