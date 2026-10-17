@@ -47,6 +47,12 @@ Endpoints:
 - `POST /api/locations` / `PATCH /api/locations/{id}` - create or rename one
   (names are unique ignoring case - 409 on a clash)
 - `DELETE /api/locations/{id}` - 409 if any plan still uses it
+- `POST /api/instagram-import` - `{posts: [{permalink, caption}], location_id}`
+  from the web-capture Chrome extension's saved-collection import: Claude
+  (`app/ai_extraction.py`) pulls the real places out of each caption and
+  each becomes a plan, URL = the source post. Posts already imported
+  (matched by permalink) are skipped before calling Claude. Needs
+  `ANTHROPIC_API_KEY` - 503 if unset.
 
 ## Schema changes (Alembic)
 

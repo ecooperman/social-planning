@@ -19,3 +19,10 @@ SHARED_ASSETS_BASE = "https://static.evancooperman.com" if ENV == "production" e
 # TRIPS_PUBLIC_URL is only for links a browser follows to a trip.
 TRIPS_API_BASE = os.environ.get("TRIPS_API_BASE", "http://127.0.0.1:8060")
 TRIPS_PUBLIC_URL = "https://trips.evancooperman.com" if ENV == "production" else "http://127.0.0.1:8060"
+
+# Used by app/ai_extraction.py to turn Instagram captions into candidate
+# plans. Never committed - exported in your shell for local dev; on the
+# droplet it comes from the shared secrets file every app reads
+# (/etc/personal-apps/shared.env, see DEPLOYMENT.md). The Instagram import
+# fails with a clear 503 (not a silent no-op) if this is unset.
+ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY")

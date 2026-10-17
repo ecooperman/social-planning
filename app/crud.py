@@ -116,3 +116,9 @@ def save_scrape_result(
     db.commit()
     db.refresh(db_plan)
     return db_plan
+
+
+def get_plan_urls(db: Session) -> set:
+    """Every plan URL in the database - the Instagram import's "already
+    imported this post?" check, done once per import rather than per post."""
+    return {url for (url,) in db.query(models.Plan.url).filter(models.Plan.url.isnot(None))}

@@ -4,7 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from .config import SHARED_ASSETS_BASE
-from .routers import locations, plans, trips_link
+from .routers import instagram_import, locations, plans, trips_link
 
 # Schema is owned by Alembic migrations (see migrations/) - run
 # `alembic upgrade head` before starting the app rather than relying on
@@ -31,6 +31,7 @@ app.get("/settings.html", response_class=HTMLResponse)(_render("settings.html"))
 app.include_router(plans.router)
 app.include_router(locations.router)
 app.include_router(trips_link.router)
+app.include_router(instagram_import.router)
 
 app.mount("/", StaticFiles(directory="static", html=True), name="static")
 
