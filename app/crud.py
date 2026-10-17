@@ -15,6 +15,10 @@ def get_location(db: Session, location_id: int):
     return db.query(models.Location).filter(models.Location.id == location_id).first()
 
 
+def get_location_by_place_id(db: Session, place_id: str):
+    return db.query(models.Location).filter(models.Location.place_id == place_id).first()
+
+
 def location_name_taken(db: Session, name: str, exclude_id: Optional[int] = None) -> bool:
     """Case-insensitive, so "tokyo" can't sit alongside "Tokyo" - the whole
     point of a picked-from-a-list location is one spelling per place."""

@@ -3,53 +3,51 @@
    https://static.evancooperman.com/theme.css - see that repo's README.
    Only what's specific to this app belongs here. */
 
-/* --- settings page (locations) - mirrors finances' settings rows --- */
+/* --- settings page (locations) --- */
 
 .settings-section {
   margin-bottom: 22px;
 }
 
-.settings-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-bottom: 12px;
+.place-search {
+  margin-bottom: 4px;
 }
 
-.settings-row {
+.place-results {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.place-result {
+  text-align: left;
   background: #fff;
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 8px 10px;
-  flex-wrap: wrap;
+  font: inherit;
+  cursor: pointer;
 }
 
-.settings-row input[type="text"] {
-  flex: 1;
-  min-width: 120px;
-  width: auto;
+.place-result:hover {
+  border-color: var(--text);
 }
 
-.settings-row .secondary-btn,
-.settings-row .danger-btn {
-  padding: 6px 12px;
-  font-size: 13px;
+.place-verified {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 6px 2px 10px;
 }
 
-.settings-inline-add {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.settings-inline-add input[type="text"] {
-  flex: 1;
-  min-width: 140px;
-  width: auto;
+.link-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-decoration: underline;
+  cursor: pointer;
 }
 
 .settings-note {

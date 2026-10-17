@@ -23,13 +23,16 @@
     <div id="page-message" class="page-message hidden"></div>
 
     <section class="settings-section">
-      <div class="list-header"><h2>Locations</h2></div>
-      <div id="location-list" class="settings-list"></div>
-      <form id="add-location-form" class="settings-inline-add">
-        <input name="name" type="text" required placeholder="e.g. Tokyo" />
-        <button type="submit" class="save-btn">Add location</button>
-      </form>
-      <p class="settings-note">Names are unique (ignoring case). You can't delete a location still set on a plan.</p>
+      <div class="list-header">
+        <h2>Locations</h2>
+        <span id="location-count" class="list-count"></span>
+      </div>
+
+      <button id="show-add-location" type="button" class="add-toggle">+ Add Location</button>
+      <div id="add-location-card" class="add-card hidden"></div>
+
+      <div id="location-list" class="item-list"></div>
+      <p class="settings-note">Search to fill a location in from Google, or type the fields yourself. Names are unique (ignoring case), and a looked-up place can only be added once. You can't delete a location still set on a plan.</p>
     </section>
   </main>
 

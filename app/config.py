@@ -26,3 +26,10 @@ TRIPS_PUBLIC_URL = "https://trips.evancooperman.com" if ENV == "production" else
 # (/etc/personal-apps/shared.env, see DEPLOYMENT.md). The Instagram import
 # fails with a clear 503 (not a silent no-op) if this is unset.
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY")
+
+# Used by app/places.py (Google Places API - autocomplete + place details)
+# for the optional location lookup on settings.html. Same never-committed,
+# shell-set-locally / shared-secrets-file-on-the-droplet pattern as
+# ANTHROPIC_API_KEY above. Unset, the lookup is simply hidden and
+# locations are typed in by hand - nothing else depends on it.
+GOOGLE_MAPS_API_KEY = os.environ.get("GOOGLE_MAPS_API_KEY")

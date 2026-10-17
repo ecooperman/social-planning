@@ -1,7 +1,7 @@
 import enum
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, Enum, ForeignKey, Integer, String
+from sqlalchemy import Column, DateTime, Enum, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 
 from .database import Base
@@ -23,7 +23,22 @@ class Location(Base):
     __tablename__ = "locations"
 
     id = Column(Integer, primary_key=True)
+    # The label shown everywhere ("Salem, MA") - unique ignoring case.
     name = Column(String, nullable=False, unique=True)
+
+    # Where it actually is. Filled in by the Google place lookup on
+    # settings.html when that's available, or typed by hand when it isn't -
+    # so all optional. city is empty for places that aren't one (Napa
+    # Valley, a national park); region is the state/province/prefecture.
+    city = Column(String, nullable=True)
+    region = Column(String, nullable=True)
+    country = Column(String, nullable=True)
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
+    # Google's Place ID, set only by the lookup - the real "same place"
+    # check (two spellings of one place can't both be added), and the
+    # marker that a location was verified rather than typed.
+    place_id = Column(String, nullable=True, unique=True)
 
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

@@ -47,6 +47,13 @@ Endpoints:
 - `POST /api/locations` / `PATCH /api/locations/{id}` - create or rename one
   (names are unique ignoring case - 409 on a clash)
 - `DELETE /api/locations/{id}` - 409 if any plan still uses it
+- Locations carry optional `city` / `region` / `country` / `latitude` /
+  `longitude` / `place_id`, typed by hand or filled in by the Google place
+  lookup on the Settings page: `GET /api/locations/lookup/available`,
+  `GET /api/locations/lookup?q=` (autocomplete), and
+  `GET /api/locations/lookup/{place_id}` (details). The lookup needs
+  `GOOGLE_MAPS_API_KEY` with Places API (New) enabled; without it the page
+  falls back to manual entry. A `place_id` can only be added once (409).
 - `POST /api/instagram-import` - `{posts: [{permalink, caption}], location_id}`
   from the web-capture Chrome extension's saved-collection import: Claude
   (`app/ai_extraction.py`) pulls the real places out of each caption and

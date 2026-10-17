@@ -8,6 +8,12 @@ from .models import ScrapeStatus
 
 class LocationBase(BaseModel):
     name: str
+    city: Optional[str] = None
+    region: Optional[str] = None
+    country: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    place_id: Optional[str] = None
 
 
 class LocationCreate(LocationBase):
@@ -16,6 +22,32 @@ class LocationCreate(LocationBase):
 
 class LocationUpdate(BaseModel):
     name: Optional[str] = None
+    city: Optional[str] = None
+    region: Optional[str] = None
+    country: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    place_id: Optional[str] = None
+
+
+class PlaceSuggestion(BaseModel):
+    """One autocomplete result from the Google place lookup - just enough
+    to show in a list; picking one fetches the full details."""
+
+    place_id: str
+    label: str
+
+
+class PlaceDetails(BaseModel):
+    """A looked-up place, shaped like the location fields it fills in."""
+
+    place_id: str
+    name: str
+    city: Optional[str] = None
+    region: Optional[str] = None
+    country: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
 
 
 class Location(LocationBase):
