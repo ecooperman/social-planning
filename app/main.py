@@ -4,7 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from .config import SHARED_ASSETS_BASE
-from .routers import ideas
+from .routers import locations, plans, trips_link
 
 # Schema is owned by Alembic migrations (see migrations/) - run
 # `alembic upgrade head` before starting the app rather than relying on
@@ -17,12 +17,20 @@ templates = Jinja2Templates(directory="templates")
 # shared_assets_base baked in server-side (no client-side fetch, no flash
 # of unstyled content) - see config.py's SHARED_ASSETS_BASE. Registered
 # before the StaticFiles mount below so this takes priority over it.
-@app.get("/", response_class=HTMLResponse)
-def index(request: Request):
-    return templates.TemplateResponse(request, "index.html", {"shared_assets_base": SHARED_ASSETS_BASE})
+def _render(name: str):
+    def route(request: Request):
+        return templates.TemplateResponse(request, name, {"shared_assets_base": SHARED_ASSETS_BASE})
+
+    return route
 
 
-app.include_router(ideas.router)
+app.get("/", response_class=HTMLResponse)(_render("index.html"))
+app.get("/settings.html", response_class=HTMLResponse)(_render("settings.html"))
+
+
+app.include_router(plans.router)
+app.include_router(locations.router)
+app.include_router(trips_link.router)
 
 app.mount("/", StaticFiles(directory="static", html=True), name="static")
 

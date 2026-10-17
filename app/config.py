@@ -11,3 +11,11 @@ PORT = 8020
 # hand-editing a URL and remembering to revert it.
 ENV = os.environ.get("APP_ENV", "local")
 SHARED_ASSETS_BASE = "https://static.evancooperman.com" if ENV == "production" else "http://127.0.0.1:8070"
+
+# trip-planning - a plan can be sent there as an activity (optionally on a
+# trip), and trips keeps the resulting Activity.plan_id link (see
+# routers/trips_link.py). API calls go server-to-server on 127.0.0.1, same
+# as finances -> trips, which sidesteps Cloudflare Access entirely.
+# TRIPS_PUBLIC_URL is only for links a browser follows to a trip.
+TRIPS_API_BASE = os.environ.get("TRIPS_API_BASE", "http://127.0.0.1:8060")
+TRIPS_PUBLIC_URL = "https://trips.evancooperman.com" if ENV == "production" else "http://127.0.0.1:8060"

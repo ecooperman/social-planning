@@ -1,8 +1,11 @@
 # Social Planning
 
-A small local app for keeping a running list of potential date/activity
-ideas - name, description, a source URL (e.g. an Instagram or Facebook
-post), and a date the idea might happen on.
+A small local app for keeping a running list of plans - things to do and
+places to go - with a name, description, a source URL (e.g. an Instagram or
+Facebook post), a date the plan might happen on, and a location picked from
+a managed list (Settings page). These were called "ideas" until the
+`a3c9e1f4b2d7` migration renamed the table; the SQLite file is still
+`ideas.db`.
 
 ## Run it
 
@@ -23,7 +26,7 @@ install; see below for how schema changes are handled from here on.
 
 ## API-first design
 
-The backend (`app/`) is a plain JSON REST API (`/api/ideas`, `/docs` for the
+The backend (`app/`) is a plain JSON REST API (`/api/plans`, `/docs` for the
 interactive Swagger UI) with no knowledge of the frontend. The frontend
 (`static/`) is a thin vanilla-JS client with no build step, talking to the
 API over `fetch`. That separation means the backend can be tested and used
@@ -32,14 +35,18 @@ richer without touching the API.
 
 Endpoints:
 
-- `GET /api/ideas` - list all ideas
-- `POST /api/ideas` - create an idea (`name` is the only required field)
-- `GET /api/ideas/{id}` - fetch one idea
-- `PATCH /api/ideas/{id}` - update any subset of fields, including
-  `event_date` (send `null` to clear it)
-- `DELETE /api/ideas/{id}` - delete an idea
-- `POST /api/ideas/{id}/scrape` - (re-)run the scraper for the idea's URL and
-  persist the result onto the idea
+- `GET /api/plans` - list all plans
+- `POST /api/plans` - create a plan (`name` is the only required field)
+- `GET /api/plans/{id}` - fetch one plan
+- `PATCH /api/plans/{id}` - update any subset of fields, including
+  `event_date` and `location_id` (send `null` to clear either)
+- `DELETE /api/plans/{id}` - delete a plan
+- `POST /api/plans/{id}/scrape` - (re-)run the scraper for the plan's URL and
+  persist the result onto the plan
+- `GET /api/locations` - list locations, alphabetically
+- `POST /api/locations` / `PATCH /api/locations/{id}` - create or rename one
+  (names are unique ignoring case - 409 on a clash)
+- `DELETE /api/locations/{id}` - 409 if any plan still uses it
 
 ## Schema changes (Alembic)
 

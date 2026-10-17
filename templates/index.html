@@ -13,19 +13,21 @@
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-  <meta name="apple-mobile-web-app-title" content="Ideas" />
+  <meta name="apple-mobile-web-app-title" content="Plans" />
 </head>
 <body>
   <header class="app-header">
-    <h1>Date &amp; Activity Ideas</h1>
+    <h1>Plans</h1>
   </header>
+
+  <div id="app-nav-mount"></div>
 
   <main>
     <div id="page-message" class="page-message hidden"></div>
 
-    <button id="show-add-idea" type="button" class="add-toggle">+ Add Idea</button>
+    <button id="show-add-plan" type="button" class="add-toggle">+ Add Plan</button>
 
-    <form id="new-idea-form" class="add-card hidden">
+    <form id="new-plan-form" class="add-card hidden">
       <div class="field">
         <label for="new-name">Name <span class="required">*</span></label>
         <input id="new-name" name="name" type="text" required placeholder="e.g. Sunset picnic at the park" />
@@ -44,23 +46,29 @@
           <input id="new-date" name="event_date" type="date" />
         </div>
       </div>
+      <div class="field">
+        <label for="new-location">Location</label>
+        <select id="new-location" name="location_id"></select>
+      </div>
       <div class="item-actions">
-        <button type="submit" class="save-btn">Add idea</button>
-        <button type="button" id="cancel-add-idea" class="cancel-btn">Cancel</button>
+        <button type="submit" class="save-btn">Add plan</button>
+        <button type="button" id="cancel-add-plan" class="cancel-btn">Cancel</button>
       </div>
     </form>
 
     <section>
       <div class="list-header">
-        <h2>Ideas</h2>
-        <span id="idea-count" class="list-count"></span>
+        <h2>Plans</h2>
+        <span id="plan-count" class="list-count"></span>
       </div>
-      <div id="ideas-list" class="item-list"></div>
-      <p id="empty-state" class="empty-state" hidden>No ideas yet - add one above to get started.</p>
+      <div id="plans-list" class="item-list"></div>
+      <p id="empty-state" class="empty-state" hidden>No plans yet - add one above to get started.</p>
     </section>
   </main>
 
   <script src="{{ shared_assets_base }}/theme.js"></script>
+  <script src="{{ shared_assets_base }}/icons.js"></script>
+  <script src="nav.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

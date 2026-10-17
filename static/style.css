@@ -1,5 +1,86 @@
-/* Everything this app used (reset, layout, forms, accordion cards,
-   add-toggle, message toasts, buttons, scrape preview) now lives in
+/* Shared look-and-feel (reset, layout, forms, accordion cards, add-toggle,
+   message toasts, buttons, scrape preview, nav) lives in
    https://static.evancooperman.com/theme.css - see that repo's README.
-   Nothing left here: this app's colors already matched the shared default
-   palette, and it has no page-specific UI beyond the shared components. */
+   Only what's specific to this app belongs here. */
+
+/* --- settings page (locations) - mirrors finances' settings rows --- */
+
+.settings-section {
+  margin-bottom: 22px;
+}
+
+.settings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  flex-wrap: wrap;
+}
+
+.settings-row input[type="text"] {
+  flex: 1;
+  min-width: 120px;
+  width: auto;
+}
+
+.settings-row .secondary-btn,
+.settings-row .danger-btn {
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+.settings-inline-add {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.settings-inline-add input[type="text"] {
+  flex: 1;
+  min-width: 140px;
+  width: auto;
+}
+
+.settings-note {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 8px 2px 0;
+}
+
+/* --- plan card: Trips section (trip-planning link) --- */
+
+.trips-section {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.trips-link-list {
+  margin: 4px 0 10px;
+  padding-left: 18px;
+  font-size: 14px;
+}
+
+.trips-send-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.trips-send-row select {
+  flex: 1;
+  min-width: 160px;
+  width: auto;
+}

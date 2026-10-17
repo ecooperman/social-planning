@@ -1,7 +1,7 @@
 {
   "name": "Social Planning",
-  "short_name": "Ideas",
-  "description": "Date and activity ideas, captured on the spot.",
+  "short_name": "Plans",
+  "description": "Date and activity plans, captured on the spot.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
