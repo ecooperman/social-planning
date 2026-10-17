@@ -1,7 +1,7 @@
 import enum
 from datetime import datetime
 
-from sqlalchemy import Boolean, Column, DateTime, Enum, Float, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import Boolean, Column, DateTime, Enum, Float, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import relationship
 
 from .database import Base
@@ -122,6 +122,17 @@ class Plan(Base):
     # added by hand on the plans page - lets the list filter one from the
     # other. Set by the importer only; not part of PlanCreate/PlanUpdate.
     imported = Column(Boolean, nullable=False, default=False, server_default="0")
+    # Imported plans only: the source post's caption, kept so a plan can be
+    # re-read later without going back to Instagram.
+    caption = Column(Text, nullable=True)
+    # Where the caption says the place is, as Claude read it - a second
+    # opinion next to location_id (which is always the location picked for
+    # the whole import batch), so a Boston spot saved in a Salem collection
+    # can be spotted. Plain text, not linked into the country/region/city
+    # lists, since it's unverified. All null means the caption didn't say.
+    parsed_city = Column(String, nullable=True)
+    parsed_region = Column(String, nullable=True)
+    parsed_country = Column(String, nullable=True)
 
     scrape_status = Column(Enum(ScrapeStatus), nullable=False, default=ScrapeStatus.not_started)
     scraped_title = Column(String, nullable=True)

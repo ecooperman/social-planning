@@ -129,6 +129,10 @@ class Plan(PlanBase):
     id: int
     location: Optional[Location] = None
     imported: bool = False
+    caption: Optional[str] = None
+    parsed_city: Optional[str] = None
+    parsed_region: Optional[str] = None
+    parsed_country: Optional[str] = None
     scrape_status: ScrapeStatus
     scraped_title: Optional[str] = None
     scraped_description: Optional[str] = None
@@ -159,6 +163,11 @@ class InstagramImportRequest(BaseModel):
     # One location for the whole batch (a collection is usually one place),
     # picked from the managed list - optional, plans can be tagged later.
     location_id: Optional[int] = None
+    # Re-read posts that already have plans instead of skipping them,
+    # refreshing their saved caption and parsed location - never creates
+    # plans for them. How plans imported before those fields existed get
+    # filled in.
+    recheck_existing: bool = False
 
 
 class InstagramImportResult(BaseModel):
@@ -171,3 +180,7 @@ class InstagramImportResult(BaseModel):
     posts_already_imported: int
     plans_created: int
     created_names: List[str]
+    # With recheck_existing: already-imported posts re-read, and how many of
+    # their plans got a refreshed parsed location.
+    posts_rechecked: int = 0
+    plans_updated: int = 0

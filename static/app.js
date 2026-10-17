@@ -70,17 +70,46 @@ async function loadPlans() {
 // description.
 
 let allPlans = [];
-const filters = { location: new Set(), source: new Set(), trips: new Set(), search: "" };
+const filters = { location: new Set(), source: new Set(), trips: new Set(), check: new Set(), search: "" };
 const NO_LOCATION = "none";
 
 function onTrip(plan) {
   return linksForPlan(plan.id).some((link) => link.trip_id);
 }
 
+// --- parsed location -----------------------------------------------------
+//
+// Imported plans carry where Claude read the place to be from its caption
+// (parsed_city/region/country - see models.Plan), next to the location the
+// whole import was filed under. locationCheck compares the most specific
+// level both have: city (and region too, when both have one, so Salem MA
+// vs Salem OR doesn't pass), else region, else country.
+
+function parsedLocationLabel(plan) {
+  return [plan.parsed_city, plan.parsed_region, plan.parsed_country].filter(Boolean).join(", ");
+}
+
+function locationCheck(plan) {
+  const loc = plan.location;
+  if (!loc || !parsedLocationLabel(plan)) return "unknown";
+  const same = (a, b) => a.trim().toLowerCase() === b.trim().toLowerCase();
+  const city = loc.city && loc.city.name;
+  const region = loc.region && loc.region.name;
+  const country = loc.country && loc.country.name;
+  if (plan.parsed_city && city) {
+    if (!same(plan.parsed_city, city)) return "different";
+    return plan.parsed_region && region && !same(plan.parsed_region, region) ? "different" : "match";
+  }
+  if (plan.parsed_region && region) return same(plan.parsed_region, region) ? "match" : "different";
+  if (plan.parsed_country && country) return same(plan.parsed_country, country) ? "match" : "different";
+  return "unknown";
+}
+
 function planMatches(plan) {
   if (filters.location.size && !filters.location.has(plan.location_id == null ? NO_LOCATION : String(plan.location_id))) return false;
   if (filters.source.size && !filters.source.has(plan.imported ? "imported" : "manual")) return false;
   if (filters.trips.size && !filters.trips.has(onTrip(plan) ? "on" : "off")) return false;
+  if (filters.check.size && !filters.check.has(locationCheck(plan))) return false;
   if (filters.search) {
     const haystack = `${plan.name} ${plan.description || ""}`.toLowerCase();
     if (!haystack.includes(filters.search)) return false;
@@ -89,7 +118,13 @@ function planMatches(plan) {
 }
 
 function filtersActive() {
-  return filters.location.size > 0 || filters.source.size > 0 || filters.trips.size > 0 || filters.search !== "";
+  return (
+    filters.location.size > 0 ||
+    filters.source.size > 0 ||
+    filters.trips.size > 0 ||
+    filters.check.size > 0 ||
+    filters.search !== ""
+  );
 }
 
 function renderPlans() {
@@ -153,6 +188,17 @@ function initFilters() {
   );
 
   // Only meaningful when the trips app answered - see loadTripsLink.
+  filterMultiSelect(
+    "check-filter-mount",
+    "check",
+    [
+      { value: "match", label: "Caption matches location" },
+      { value: "different", label: "Caption suggests elsewhere" },
+      { value: "unknown", label: "Caption doesn't say" },
+    ],
+    "Any location check"
+  );
+
   const tripsMount = document.getElementById("trips-filter-mount");
   if (tripsAvailable) {
     filterMultiSelect(
@@ -188,7 +234,22 @@ function exportPlans() {
     Global.showMessage("No plans to export with the current filters.", "error");
     return;
   }
-  const header = ["Name", "Description", "URL", "Location", "City", "State / region", "Country", "Date", "Source", "Trips", "Added"];
+  const header = [
+    "Name",
+    "Description",
+    "URL",
+    "Location",
+    "City",
+    "State / region",
+    "Country",
+    "Parsed location",
+    "Location check",
+    "Date",
+    "Source",
+    "Trips",
+    "Added",
+  ];
+  const checkLabels = { match: "Matches", different: "Different", unknown: "Unknown" };
   const rows = shown.map((plan) => {
     const loc = plan.location;
     const trips = [...new Set(linksForPlan(plan.id).map((l) => l.trip_location || "Activity (no trip)"))].join("; ");
@@ -200,6 +261,8 @@ function exportPlans() {
       loc && loc.city && loc.city.name,
       loc && loc.region && loc.region.name,
       loc && loc.country && loc.country.name,
+      parsedLocationLabel(plan),
+      checkLabels[locationCheck(plan)],
       Global.toISODate(plan.event_date),
       plan.imported ? "Imported" : "Added by hand",
       trips,
@@ -270,6 +333,16 @@ function planCardElement(plan, { expanded = false } = {}) {
     summary.appendChild(Global.el("span", { class: "item-badge item-badge-trip", text: `✈ ${onTrips.join(", ")}` }));
   }
 
+  if (locationCheck(plan) === "different") {
+    summary.appendChild(
+      Global.el("span", {
+        class: "item-badge item-badge-warning",
+        title: `The caption suggests this is in ${parsedLocationLabel(plan)}, not ${plan.location.name}`,
+        text: `⚠ ${[plan.parsed_city, plan.parsed_region].filter(Boolean).join(", ") || plan.parsed_country}`,
+      })
+    );
+  }
+
   const dateLabel = Global.formatDateBadge(plan.event_date);
   if (dateLabel) {
     summary.appendChild(Global.el("span", { class: "item-badge item-badge-date", text: dateLabel }));
@@ -305,6 +378,10 @@ function buildPlanDetails(card, plan) {
     Global.el("div", { class: "field" }, [Global.el("label", { text: "Location" }), locationSelect]),
   ]);
   wrap.appendChild(fields);
+
+  if (plan.imported) {
+    wrap.appendChild(buildCaptionSection(plan));
+  }
 
   if (plan.url) {
     wrap.appendChild(buildScrapeSection(card, plan));
@@ -416,6 +493,32 @@ function buildTripsSection(card, plan) {
   });
 
   section.appendChild(Global.el("div", { class: "trips-send-row" }, [tripSelect, sendBtn]));
+  return section;
+}
+
+// What the import read off the source post: where the caption says the
+// place is, and the caption itself (collapsed - they can be long).
+function buildCaptionSection(plan) {
+  const check = locationCheck(plan);
+  const parsed = parsedLocationLabel(plan);
+  let text;
+  if (!plan.caption) text = "Not re-checked yet - re-import this collection with Re-check posts already imported.";
+  else if (!parsed) text = "The caption doesn't say where this is.";
+  else if (check === "different") text = `The caption suggests ${parsed} - not ${plan.location.name}.`;
+  else text = `The caption suggests ${parsed}.`;
+
+  const section = Global.el("div", { class: "caption-section" }, [
+    Global.el("label", { text: "From the Instagram post" }),
+    Global.el("p", { class: "caption-parsed" + (check === "different" ? " caption-parsed-warning" : ""), text }),
+  ]);
+  if (plan.caption) {
+    section.appendChild(
+      Global.el("details", { class: "caption-original" }, [
+        Global.el("summary", { text: "Original caption" }),
+        Global.el("p", { text: plan.caption }),
+      ])
+    );
+  }
   return section;
 }
 

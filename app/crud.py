@@ -299,3 +299,16 @@ def delete_place(db: Session, model, record_id: int) -> str:
     db.delete(record)
     db.commit()
     return "deleted"
+
+
+def get_plans_by_url(db: Session, url: str):
+    return db.query(models.Plan).filter(models.Plan.url == url).order_by(models.Plan.id).all()
+
+
+def set_parsed_location(db: Session, plan, caption: Optional[str], city=None, region=None, country=None):
+    """Records what the import read off a plan's source post - its caption,
+    and where the caption says the place is (see models.Plan). Caller
+    commits."""
+    clean = lambda v: (v or "").strip() or None
+    plan.caption = caption
+    plan.parsed_city, plan.parsed_region, plan.parsed_country = clean(city), clean(region), clean(country)

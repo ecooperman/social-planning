@@ -11,7 +11,7 @@ results are meant to be reviewed/edited on the plans page after import, so
 a wrong or approximate name is an acceptable, expected outcome, not a bug
 to chase out here.
 """
-from typing import List
+from typing import List, Optional
 
 import anthropic
 from pydantic import BaseModel
@@ -44,12 +44,30 @@ from the handle, not stated outright, so it's easy to spot and fix.
 For each place, write 1-3 sentences of notes capturing whatever the \
 caption actually says about it (why it's recommended, what to get/do \
 there, hours or tips mentioned) - don't invent details the caption \
-doesn't contain."""
+doesn't contain.
+
+For each place, also say where it is: its city, its state/province/region \
+(full name, e.g. "Massachusetts", not "MA"), and its country (common \
+English name, e.g. "United States"). Fill these in only when the caption \
+states or clearly implies them (a named town or neighborhood, an address, \
+a hashtag like #bostoneats), or when you confidently know where that \
+specific named place is. Otherwise leave them null - an honest unknown is \
+far more useful here than a guess.
+
+The message may say which location the user filed this post under. That's \
+where they expected it to be, not evidence of where it is: don't copy it \
+into a place's location unless the caption supports it or you know the \
+place is there. A place that's actually somewhere else (a Boston spot in a \
+Salem collection) should get its real location - spotting those is the \
+point of asking."""
 
 
 class ExtractedPlace(BaseModel):
     name: str
     notes: str
+    city: Optional[str] = None
+    region: Optional[str] = None
+    country: Optional[str] = None
 
 
 class CaptionExtraction(BaseModel):
@@ -64,7 +82,15 @@ def _client() -> anthropic.Anthropic:
     return anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
 
-def extract_places(caption: str) -> List[ExtractedPlace]:
+def _user_message(caption: str, filed_under: Optional[str]) -> str:
+    """Caption plus where it was filed - kept in the user message so the
+    system prompt stays identical across every call."""
+    if not filed_under:
+        return caption
+    return f"Filed under: {filed_under}\n\nCaption:\n{caption}"
+
+
+def extract_places(caption: str, filed_under: Optional[str] = None) -> List[ExtractedPlace]:
     """Returns the candidate places found in one caption - an empty list if
     the caption doesn't describe a visitable place at all, or if the
     request was declined (treated the same as "not a place": the post is
@@ -76,7 +102,7 @@ def extract_places(caption: str) -> List[ExtractedPlace]:
         model=MODEL,
         max_tokens=4096,
         system=SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": caption}],
+        messages=[{"role": "user", "content": _user_message(caption, filed_under)}],
         output_format=CaptionExtraction,
         # Short, simple extraction - low effort is plenty and keeps a
         # many-post import quick and cheap.

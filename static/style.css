@@ -166,3 +166,37 @@
   padding: 6px 12px;
   font-size: 13px;
 }
+
+/* --- parsed location (imported plans) --- */
+
+.item-badge-warning {
+  background: #fdf0d8;
+  color: #8a5a00;
+}
+
+.caption-section {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.caption-parsed {
+  font-size: 14px;
+  margin: 4px 0 6px;
+}
+
+.caption-parsed-warning {
+  color: #8a5a00;
+}
+
+.caption-original summary {
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.caption-original p {
+  white-space: pre-wrap;
+  font-size: 13px;
+  margin: 6px 0 0;
+}
