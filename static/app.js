@@ -105,6 +105,24 @@ function locationCheck(plan) {
   return "unknown";
 }
 
+// Existing locations (the Settings page's list - never a new one) that sit
+// exactly where the caption says the place is: same city (and region and
+// country, where both sides have them); or, when the caption only names a
+// region or country, a location at that level with nothing more specific.
+// Matched through the country/region/city entries, not the display name.
+function locationsMatchingParsed(plan) {
+  const same = (a, b) => a.trim().toLowerCase() === b.trim().toLowerCase();
+  const fits = (part, value) => !value || !part || same(part.name, value);
+  return locations.filter((loc) => {
+    if (loc.id === plan.location_id) return false;
+    if (!fits(loc.country, plan.parsed_country)) return false;
+    if (plan.parsed_city) return loc.city && same(loc.city.name, plan.parsed_city) && fits(loc.region, plan.parsed_region);
+    if (plan.parsed_region) return !loc.city && loc.region && same(loc.region.name, plan.parsed_region);
+    if (plan.parsed_country) return !loc.city && !loc.region && loc.country;
+    return false;
+  });
+}
+
 function planMatches(plan) {
   if (filters.location.size && !filters.location.has(plan.location_id == null ? NO_LOCATION : String(plan.location_id))) return false;
   if (filters.source.size && !filters.source.has(plan.imported ? "imported" : "manual")) return false;
@@ -380,7 +398,7 @@ function buildPlanDetails(card, plan) {
   wrap.appendChild(fields);
 
   if (plan.imported) {
-    wrap.appendChild(buildCaptionSection(plan));
+    wrap.appendChild(buildCaptionSection(card, plan));
   }
 
   if (plan.url) {
@@ -498,7 +516,7 @@ function buildTripsSection(card, plan) {
 
 // What the import read off the source post: where the caption says the
 // place is, and the caption itself (collapsed - they can be long).
-function buildCaptionSection(plan) {
+function buildCaptionSection(card, plan) {
   const check = locationCheck(plan);
   const parsed = parsedLocationLabel(plan);
   let text;
@@ -511,6 +529,7 @@ function buildCaptionSection(plan) {
     Global.el("label", { text: "From the Instagram post" }),
     Global.el("p", { class: "caption-parsed" + (check === "different" ? " caption-parsed-warning" : ""), text }),
   ]);
+  if (check === "different") section.appendChild(buildMoveRow(card, plan));
   if (plan.caption) {
     section.appendChild(
       Global.el("details", { class: "caption-original" }, [
@@ -520,6 +539,49 @@ function buildCaptionSection(plan) {
     );
   }
   return section;
+}
+
+// One-click re-tag for a plan whose caption puts it somewhere else: a
+// button per existing location at that spot, or a pointer to Settings when
+// there isn't one yet (locations are only ever created there).
+function buildMoveRow(card, plan) {
+  const matches = locationsMatchingParsed(plan);
+  if (!matches.length) {
+    return Global.el("p", { class: "caption-move-hint" }, [
+      `No location for ${parsedLocationLabel(plan)} yet - `,
+      Global.el("a", { href: "/settings.html", text: "add one in Settings" }),
+      " and a Move button will appear here.",
+    ]);
+  }
+  return Global.el(
+    "div",
+    { class: "caption-move-row" },
+    matches.map((loc) =>
+      Global.el("button", {
+        type: "button",
+        class: "secondary-btn",
+        text: `Move to ${loc.name}`,
+        onclick: async (e) => {
+          e.target.disabled = true;
+          try {
+            const updated = await Global.fetchJSON(`${API_BASE}/${plan.id}`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ location_id: loc.id }),
+            });
+            allPlans = allPlans.map((p) => (p.id === updated.id ? updated : p));
+            Global.showMessage(`Moved "${plan.name}" to ${loc.name}.`, "success");
+            initFilters(); // the location filter's options may have changed
+            card.replaceWith(planCardElement(updated, { expanded: true }));
+            updatePlanCounts();
+          } catch (err) {
+            e.target.disabled = false;
+            Global.showMessage(err.message, "error");
+          }
+        },
+      })
+    )
+  );
 }
 
 function buildScrapeSection(card, plan) {

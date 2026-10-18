@@ -200,3 +200,16 @@
   font-size: 13px;
   margin: 6px 0 0;
 }
+
+.caption-move-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 2px 0 8px;
+}
+
+.caption-move-hint {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 2px 0 8px;
+}
