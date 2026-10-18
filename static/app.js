@@ -678,6 +678,7 @@ function initAddPlanForm() {
 initAddPlanForm();
 initSearch();
 document.getElementById("export-plans").addEventListener("click", exportPlans);
-Promise.all([loadLocations(), loadTripsLink()])
-  .then(loadPlans)
-  .catch((err) => console.error("Failed to load plans", err));
+Global.withLoading(
+  document.getElementById("plans-list"),
+  Promise.all([loadLocations(), loadTripsLink()]).then(loadPlans)
+).catch((err) => console.error("Failed to load plans", err));

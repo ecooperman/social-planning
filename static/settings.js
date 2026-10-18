@@ -447,7 +447,10 @@ function renderGeoList(id, rows) {
 }
 
 async function refreshGeoLists() {
-  const [regions, cities] = await Promise.all([Global.fetchJSON(`${API}/regions`), Global.fetchJSON(`${API}/cities`)]);
+  const [regions, cities] = await Promise.all([
+    Global.withLoading(document.getElementById("region-list"), Global.fetchJSON(`${API}/regions`)),
+    Global.withLoading(document.getElementById("city-list"), Global.fetchJSON(`${API}/cities`)),
+  ]);
   const countryName = Object.fromEntries(countries.map((c) => [c.id, c.name]));
   const regionName = Object.fromEntries(regions.map((r) => [r.id, r.name]));
   renderGeoList("country-list", countries.map((c) => geoRow(c, "countries")));
@@ -461,12 +464,12 @@ async function refreshGeoLists() {
 // --- load -------------------------------------------------------------------
 
 async function refresh() {
-  const [locations, countryList] = await Promise.all([
-    Global.fetchJSON(LOCATIONS_API),
-    Global.fetchJSON(`${API}/countries`),
-  ]);
-  countries = countryList;
   const list = document.getElementById("location-list");
+  const [locations, countryList] = await Global.withLoading(
+    list,
+    Promise.all([Global.fetchJSON(LOCATIONS_API), Global.fetchJSON(`${API}/countries`)])
+  );
+  countries = countryList;
   list.innerHTML = "";
   document.getElementById("location-count").textContent = locations.length ? `${locations.length}` : "";
   locations.forEach((loc) => list.appendChild(locationCard(loc)));
