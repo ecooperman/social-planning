@@ -12,12 +12,14 @@ import requests
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from ..config import TRIPS_API_BASE, TRIPS_PUBLIC_URL
+from ..config import TRIPS_API_BASE, TRIPS_PUBLIC_URL, TRIPS_SERVICE_TOKEN
 
 router = APIRouter(prefix="/api/trips-link", tags=["trips-link"])
 
 
 def _trips_request(method: str, path: str, **kwargs):
+    if TRIPS_SERVICE_TOKEN:
+        kwargs["headers"] = {**kwargs.get("headers", {}), "X-Service-Token": TRIPS_SERVICE_TOKEN}
     try:
         resp = requests.request(method, f"{TRIPS_API_BASE}{path}", timeout=10, **kwargs)
     except requests.RequestException as exc:

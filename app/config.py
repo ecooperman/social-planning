@@ -20,6 +20,13 @@ SHARED_ASSETS_BASE = "https://static.evancooperman.com" if ENV == "production" e
 TRIPS_API_BASE = os.environ.get("TRIPS_API_BASE", "http://127.0.0.1:8060")
 TRIPS_PUBLIC_URL = "https://trips.evancooperman.com" if ENV == "production" else "http://127.0.0.1:8060"
 
+# Trip-planning has accounts now, so these direct calls (no signed-in person on
+# a server-to-server request) prove who they are with a shared secret, sent as
+# X-Service-Token. Same value as trip-planning's TRIPS_SERVICE_TOKEN - set it
+# once in /etc/personal-apps/shared.env (see DEPLOYMENT.md); unset, the header
+# is simply not sent and trip-planning refuses the call.
+TRIPS_SERVICE_TOKEN = os.environ.get("TRIPS_SERVICE_TOKEN")
+
 # Used by app/ai_extraction.py to turn Instagram captions into candidate
 # plans. Never committed - exported in your shell for local dev; on the
 # droplet it comes from the shared secrets file every app reads
