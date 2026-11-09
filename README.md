@@ -183,3 +183,8 @@ upgrade head`, and restarts the service. Needs these repo secrets set once
   `POST /api/ideas/{id}/scrape`. It can be re-run any time (e.g. after a
   transient failure) via "Re-fetch preview", and lives inside the expanded
   card alongside the scraped preview (if any).
+
+## To do
+
+The running to-do list for all projects is `../TODO.md` (in the personal-projects
+folder, one level up; not in git).
