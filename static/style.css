@@ -20,7 +20,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  background: #fff;
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 8px 10px;
@@ -81,7 +81,7 @@
 
 .place-result {
   text-align: left;
-  background: #fff;
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 8px 10px;
@@ -170,8 +170,8 @@
 /* --- parsed location (imported plans) --- */
 
 .item-badge-warning {
-  background: #fdf0d8;
-  color: #8a5a00;
+  background: var(--warning-bg);
+  color: var(--warning);
 }
 
 .caption-section {
@@ -186,7 +186,7 @@
 }
 
 .caption-parsed-warning {
-  color: #8a5a00;
+  color: var(--warning);
 }
 
 .caption-original summary {

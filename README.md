@@ -105,8 +105,9 @@ otherwise.
 ## Upgrading to Postgres later
 
 Everything goes through SQLAlchemy + Alembic, so moving off SQLite is mostly
-a matter of swapping `DATABASE_URL` in `app/database.py` (and
-`sqlalchemy.url` in `alembic.ini`) for a Postgres connection string,
+a matter of setting the `DATABASE_URL` environment variable (read by
+`app/database.py` and `migrations/env.py`; the default is the local
+`ideas.db`) to a Postgres connection string,
 installing a driver (`psycopg`), and running `alembic upgrade head` against
 the new database - no application code depends on SQLite specifics.
 
