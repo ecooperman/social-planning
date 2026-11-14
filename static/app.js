@@ -348,16 +348,17 @@ function planCardElement(plan, { expanded = false } = {}) {
 
   const onTrips = [...new Set(linksForPlan(plan.id).map((l) => l.trip_location).filter(Boolean))];
   if (onTrips.length) {
-    summary.appendChild(Global.el("span", { class: "item-badge item-badge-trip", text: `✈ ${onTrips.join(", ")}` }));
+    summary.appendChild(Global.iconBadge("plane", onTrips.join(", "), "item-badge-trip"));
   }
 
   if (locationCheck(plan) === "different") {
     summary.appendChild(
-      Global.el("span", {
-        class: "item-badge item-badge-warning",
-        title: `The caption suggests this is in ${parsedLocationLabel(plan)}, not ${plan.location.name}`,
-        text: `⚠ ${[plan.parsed_city, plan.parsed_region].filter(Boolean).join(", ") || plan.parsed_country}`,
-      })
+      Global.iconBadge(
+        "alert-triangle",
+        [plan.parsed_city, plan.parsed_region].filter(Boolean).join(", ") || plan.parsed_country,
+        "item-badge-warning",
+        `The caption suggests this is in ${parsedLocationLabel(plan)}, not ${plan.location.name}`
+      )
     );
   }
 

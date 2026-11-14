@@ -166,8 +166,11 @@ function buildLocationFields(location = {}) {
   });
   function renderVerified() {
     verified.innerHTML = "";
-    if (pinned.place_id) verified.append("✓ Matched to a real place via Google - ", unpin);
-    else verified.textContent = "Not matched to a place - entered by hand.";
+    if (pinned.place_id) {
+      const tick = Global.el("span", { class: "btn-icon", "data-icon": "check", "aria-hidden": "true" });
+      verified.append(tick, " Matched to a real place via Google - ", unpin);
+      applyIcons(verified);
+    } else verified.textContent = "Not matched to a place - entered by hand.";
   }
   renderVerified();
 
@@ -309,7 +312,7 @@ function locationCard(loc) {
   summary.appendChild(Global.el("span", { class: "item-summary-title", text: loc.name }));
   const where = locationWhere(loc);
   summary.appendChild(Global.el("span", { class: "item-badge", text: where || "needs a country" }));
-  if (loc.place_id) summary.appendChild(Global.el("span", { class: "item-badge", title: "Matched to a real place", text: "✓" }));
+  if (loc.place_id) summary.appendChild(Global.iconBadge("check", "", "", "Matched to a real place"));
   summary.appendChild(Global.el("span", { class: "item-chevron", "aria-hidden": "true", text: "▸" }));
 
   const details = Global.el("div", { class: "item-details hidden" });

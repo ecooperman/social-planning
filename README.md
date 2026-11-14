@@ -102,6 +102,23 @@ under the hood). If autogenerate produces a `batch_op.create_foreign_key(None,
 reference, and will fail with `ValueError: Constraint must have a name`
 otherwise.
 
+## Tests
+
+```bash
+cd social-planning && source venv/bin/activate && pip install -r requirements-dev.txt && pytest
+```
+
+`tests/conftest.py` builds a throwaway SQLite file with the real migrations and points
+`DATABASE_URL` at it *before* the app loads, so the suite can never reach your real
+`ideas.db`; `tests/test_database_url.py` checks that, and that the migrations build the schema
+the models describe. Nothing may touch the network: `requests` and the Claude client are
+replaced by an error in every test, and each test that needs Google, trip-planning, Instagram
+or Claude supplies its own fake. Covered: plans (CRUD, ordering, scrape results), locations and
+the country/region/city hierarchy, the Google place lookup, the Instagram import (including
+re-checking posts and pairing re-read names), the trips link proxy, the scraping strategies,
+caption reading, and the pages themselves (they opt into the shared v2 look, load only scripts
+that exist, and `style.css` holds no hard-coded colours).
+
 ## Upgrading to Postgres later
 
 Everything goes through SQLAlchemy + Alembic, so moving off SQLite is mostly
