@@ -158,6 +158,33 @@
   width: auto;
 }
 
+/* Phones: search takes a full row, the four filters sit in an even two-by-two grid (they used to wrap
+   into rows of mixed widths). */
+@media (max-width: 520px) {
+  .plan-filters {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: stretch;
+  }
+
+  .plan-filters #plan-search {
+    grid-column: 1 / -1;
+  }
+
+  .plan-filters > div {
+    min-width: 0;
+  }
+
+  .plan-filters .multiselect {
+    display: block;
+  }
+
+  .plan-filters .multiselect-trigger {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
 /* Export sits at the right end of the "Plans" heading row, above the
    filters it exports from. */
 .list-header #export-plans {
