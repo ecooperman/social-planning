@@ -3,6 +3,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
+from . import access
 from .config import SHARED_ASSETS_BASE
 from .routers import geo, instagram_import, locations, plans, trips_link
 
@@ -11,6 +12,7 @@ from .routers import geo, instagram_import, locations, plans, trips_link
 # create_all, so schema changes never silently bypass migrations.
 
 app = FastAPI(title="Social Planning")
+access.install(app)  # the whole app is private to its administrators
 templates = Jinja2Templates(directory="templates")
 
 

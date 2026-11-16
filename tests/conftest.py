@@ -28,6 +28,8 @@ command.upgrade(_cfg, "head")
 import requests  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 
+from shared_python import settings as shared_settings  # noqa: E402
+
 from app import ai_extraction, config, crud, models, places, schemas  # noqa: E402
 from app.database import Base, SessionLocal, engine  # noqa: E402
 from app.main import app  # noqa: E402
@@ -58,6 +60,14 @@ def no_network(monkeypatch):
     monkeypatch.setattr(config, "GOOGLE_MAPS_API_KEY", None)
     monkeypatch.setattr(places, "GOOGLE_MAPS_API_KEY", None)
     monkeypatch.setattr(trips_link, "TRIPS_SERVICE_TOKEN", None)
+    # Whatever sign-in settings the developer's shell has, tests start local, with the dev user as the administrator.
+    for name in (
+        "CF_TEAM_DOMAIN", "CF_ACCESS_AUD", "OIDC_ISSUER", "OIDC_JWKS_URL", "OIDC_AUDIENCE", "OIDC_COOKIE", "OIDC_CLIENT_ID",
+        "OIDC_CLIENT_SECRET", "OIDC_COOKIE_DOMAIN", "OIDC_RETURN_HOSTS", "OIDC_LOGIN_URL", "OIDC_LOGOUT_RETURN_PATH",
+    ):
+        monkeypatch.setattr(shared_settings, name, None)
+    monkeypatch.setattr(shared_settings, "ENV", "local")
+    monkeypatch.setattr(config, "PLANS_SERVICE_TOKEN", None)
 
 
 @pytest.fixture()

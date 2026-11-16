@@ -12,6 +12,20 @@ PORT = 8020
 ENV = os.environ.get("APP_ENV", "local")
 SHARED_ASSETS_BASE = "https://static.evancooperman.com" if ENV == "production" else "http://127.0.0.1:8070"
 
+# Who is signed in (shared_python): the whole app is private to its administrators, so everything
+# else is refused (see app/access.py). ADMIN_EMAILS (comma-separated) comes from the shared secrets
+# file on the droplet; locally the dev user is one, and is who every request is treated as.
+DEV_USER_EMAIL = os.environ.get("DEV_USER_EMAIL", "dev@localhost.test").strip().lower()
+ADMIN_EMAILS = {e.strip().lower() for e in os.environ.get("ADMIN_EMAILS", "").split(",") if e.strip()}
+if ENV != "production":
+    ADMIN_EMAILS.add(DEV_USER_EMAIL)
+
+# trip-planning calls THIS app (the plan picker on a trip) on 127.0.0.1 with no signed-in person, so it
+# proves itself with a shared secret sent as X-Service-Token, and may only make the three read-only calls
+# in app/access.py. Set once in /etc/personal-apps/shared.env (see DEPLOYMENT.md); unset, those calls
+# are refused like everything else.
+PLANS_SERVICE_TOKEN = os.environ.get("PLANS_SERVICE_TOKEN") or None
+
 # trip-planning - a plan can be sent there as an activity (optionally on a
 # trip), and trips keeps the resulting Activity.plan_id link (see
 # routers/trips_link.py). API calls go server-to-server on 127.0.0.1, same
