@@ -312,3 +312,80 @@ def set_parsed_location(db: Session, plan, caption: Optional[str], city=None, re
     clean = lambda v: (v or "").strip() or None
     plan.caption = caption
     plan.parsed_city, plan.parsed_region, plan.parsed_country = clean(city), clean(region), clean(country)
+
+
+# --- accounts ---------------------------------------------------------------------------------------------------------
+# The users table is not an owned table (it is how ownership is decided), so these are the only queries that run
+# without a person in scope. Nothing here touches anyone's plans or places.
+
+LEGACY_OWNER_EMAIL = "legacy-owner@plans.invalid"
+
+
+def normalize_email(raw: str) -> str:
+    return (raw or "").strip().lower()
+
+
+def get_user_by_email(db: Session, email: str):
+    return db.query(models.User).filter(models.User.email == normalize_email(email)).first()
+
+
+def get_user(db: Session, user_id: int):
+    return db.query(models.User).filter(models.User.id == user_id).first()
+
+
+def list_users(db: Session):
+    return db.query(models.User).filter(models.User.email != LEGACY_OWNER_EMAIL).order_by(func.lower(models.User.email)).all()
+
+
+def adopt_or_create_admin(db: Session, email: str):
+    """An administrator's account, made the first time they sign in. If the data that existed before accounts is
+    still parked on the placeholder, they take it over by giving it their email: it all becomes theirs without a
+    single row moving."""
+    email = normalize_email(email)
+    existing = get_user_by_email(db, email)
+    if existing is not None:
+        return existing
+    legacy = db.query(models.User).filter(models.User.email == LEGACY_OWNER_EMAIL).first()
+    if legacy is not None:
+        legacy.email = email
+        user = legacy
+    else:
+        user = models.User(email=email)
+        db.add(user)
+    db.commit()
+    return user
+
+
+def add_user(db: Session, email: str):
+    """Let someone in (an administrator's decision). Returns (user, created): a person whose access was removed is
+    restored, and someone who already has access is left as they are."""
+    email = normalize_email(email)
+    user = get_user_by_email(db, email)
+    if user is not None:
+        restored = user.status != models.USER_ACTIVE
+        user.status = models.USER_ACTIVE
+        db.commit()
+        return user, restored
+    user = models.User(email=email)
+    db.add(user)
+    db.commit()
+    return user, True
+
+
+def set_user_status(db: Session, user, status: str):
+    user.status = status
+    db.commit()
+    return user
+
+
+def delete_user_data(db: Session, user_id: int) -> dict:
+    """Permanently delete everything a person owns. Runs inside THEIR scope (never anyone else's), children first."""
+    from shared_python import owned
+
+    counts = {}
+    with owned.scope(user_id):
+        for key, model in (("plans", models.Plan), ("locations", models.Location), ("cities", models.City),
+                           ("regions", models.Region), ("countries", models.Country)):
+            counts[key] = db.query(model).delete(synchronize_session=False)
+        db.commit()
+    return counts

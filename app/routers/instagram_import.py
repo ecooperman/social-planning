@@ -4,9 +4,12 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from .. import ai_extraction, crud, schemas
+from shared_python import accounts_gate
+
 from ..deps import get_db
 
-router = APIRouter(prefix="/api/instagram-import", tags=["instagram-import"])
+# Spends the administrator's Anthropic key, so only an administrator may use it.
+router = APIRouter(prefix="/api/instagram-import", tags=["instagram-import"], dependencies=[Depends(accounts_gate.require_admin)])
 
 _SHORTCODE = re.compile(r"/(p|reel)/([^/?#]+)")
 

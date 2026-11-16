@@ -30,6 +30,8 @@ from fastapi.testclient import TestClient  # noqa: E402
 
 from shared_python import settings as shared_settings  # noqa: E402
 
+from shared_python import owned  # noqa: E402
+
 from app import ai_extraction, config, crud, models, places, schemas  # noqa: E402
 from app.database import Base, SessionLocal, engine  # noqa: E402
 from app.main import app  # noqa: E402
@@ -42,10 +44,56 @@ def pytest_sessionfinish(session, exitstatus):
 
 @pytest.fixture(autouse=True)
 def clean_db():
+    """Empty every table, then give the dev user (an administrator locally) an account and run the test inside THEIR
+    scope: the app now keeps every person's data private, so even a test's own database calls belong to someone.
+    Use `make_user`, `as_user` and `client_as` (below) to bring in a second person."""
     with engine.begin() as conn:
         for table in reversed(Base.metadata.sorted_tables):
             conn.execute(table.delete())
-    yield
+    with owned.unscoped(), SessionLocal() as session:
+        dev = models.User(email=config.DEV_USER_EMAIL)
+        session.add(dev)
+        session.commit()
+        dev_id = dev.id
+    with owned.scope(dev_id):
+        yield
+
+
+@pytest.fixture()
+def make_user():
+    """make_user("bob@example.com") -> the new person's id (an account: they have been let in)."""
+
+    def make(email, status=models.USER_ACTIVE):
+        with owned.unscoped(), SessionLocal() as session:
+            user = models.User(email=email, status=status)
+            session.add(user)
+            session.commit()
+            return user.id
+
+    return make
+
+
+@pytest.fixture()
+def as_user():
+    """`with as_user(person_id) as db:` a fresh database session working as that person (never mixes with another)."""
+    from contextlib import contextmanager
+
+    @contextmanager
+    def work(person_id):
+        with owned.scope(person_id), SessionLocal() as session:
+            yield session
+
+    return work
+
+
+@pytest.fixture()
+def client_as():
+    """client_as("bob@example.com") -> a client making every request as that person (locally the header says who)."""
+
+    def make(email):
+        return TestClient(app, headers={"Cf-Access-Authenticated-User-Email": email})
+
+    return make
 
 
 @pytest.fixture(autouse=True)

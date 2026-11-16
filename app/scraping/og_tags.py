@@ -2,6 +2,7 @@ from typing import Optional
 
 import requests
 from bs4 import BeautifulSoup
+from shared_python.netguard import UnsafeURL, safe_get
 
 from .base import ScrapedContent, ScraperError
 
@@ -24,9 +25,13 @@ def fetch_og_tags(url: str, timeout: int = 10) -> ScrapedContent:
     most other link-preview-friendly sites), so both strategies share it
     rather than each re-implementing HTML parsing.
     """
+    # The address was typed by a person, so it may only ever reach the public internet, never this machine's own
+    # network (every other app listens on 127.0.0.1): see shared_python/netguard.py.
     try:
-        response = requests.get(url, headers=DEFAULT_HEADERS, timeout=timeout)
+        response = safe_get(url, headers=DEFAULT_HEADERS, timeout=timeout)
         response.raise_for_status()
+    except UnsafeURL as exc:
+        raise ScraperError(f"That link can't be fetched: {exc}") from exc
     except requests.RequestException as exc:
         raise ScraperError(f"Request to {url} failed: {exc}") from exc
 

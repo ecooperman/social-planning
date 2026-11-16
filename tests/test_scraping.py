@@ -48,39 +48,49 @@ def test_open_graph_tags_are_read_and_trimmed(monkeypatch):
         seen.update(url=url, headers=headers)
         return _Response(html)
 
-    monkeypatch.setattr(requests, "get", get)
+    monkeypatch.setattr(og_tags, "safe_get", get)
     content = og_tags.fetch_og_tags("https://www.instagram.com/p/abc/")
     assert (content.title, content.description, content.image_url) == ("A cafe", "Great coffee", "https://img.example.com/a.jpg")
     assert "facebookexternalhit" in seen["headers"]["User-Agent"]  # the crawler identity that gets the real markup
 
 
 def test_a_page_with_only_some_tags_still_works(monkeypatch):
-    monkeypatch.setattr(requests, "get", lambda *a, **k: _Response(_page(("title", "Only a title"))))
+    monkeypatch.setattr(og_tags, "safe_get", lambda *a, **k: _Response(_page(("title", "Only a title"))))
     content = og_tags.fetch_og_tags("https://www.facebook.com/x")
     assert content.title == "Only a title"
     assert content.description is None and content.image_url is None
 
 
 def test_a_page_with_no_open_graph_data_is_an_error(monkeypatch):
-    monkeypatch.setattr(requests, "get", lambda *a, **k: _Response("<html><head></head></html>"))
+    monkeypatch.setattr(og_tags, "safe_get", lambda *a, **k: _Response("<html><head></head></html>"))
     with pytest.raises(ScraperError, match="No Open Graph"):
         og_tags.fetch_og_tags("https://www.instagram.com/p/x/")
 
 
 def test_empty_tag_values_count_as_missing(monkeypatch):
-    monkeypatch.setattr(requests, "get", lambda *a, **k: _Response(_page(("title", "   "))))
+    monkeypatch.setattr(og_tags, "safe_get", lambda *a, **k: _Response(_page(("title", "   "))))
     with pytest.raises(ScraperError):
         og_tags.fetch_og_tags("https://www.instagram.com/p/x/")
 
 
 def test_a_failed_request_becomes_a_scraper_error(monkeypatch):
-    monkeypatch.setattr(requests, "get", lambda *a, **k: _Response(ok=False))
+    monkeypatch.setattr(og_tags, "safe_get", lambda *a, **k: _Response(ok=False))
     with pytest.raises(ScraperError, match="failed"):
         og_tags.fetch_og_tags("https://www.instagram.com/p/x/")
 
     def down(*a, **k):
         raise requests.ConnectionError("no route")
 
-    monkeypatch.setattr(requests, "get", down)
+    monkeypatch.setattr(og_tags, "safe_get", down)
     with pytest.raises(ScraperError):
         og_tags.fetch_og_tags("https://www.instagram.com/p/x/")
+
+
+def test_the_og_fetcher_refuses_addresses_inside_the_servers_own_network():
+    """Every other app on this machine listens on 127.0.0.1 with no login of its own, so a link a person types in must
+    never be fetched from there (shared_python.netguard). No network is touched: the address is refused first."""
+    from app.scraping.base import ScraperError
+
+    for url in ("http://127.0.0.1:8080/api/balance", "http://localhost:8030/", "http://[::1]/", "http://169.254.169.254/latest/meta-data/"):
+        with pytest.raises(ScraperError, match="can't be fetched"):
+            og_tags.fetch_og_tags(url)

@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en" data-ui="v2">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Users - Plans</title>
+  <link rel="stylesheet" href="{{ shared_assets_base }}/theme.css" />
+  <link rel="icon" type="image/svg+xml" href="{{ shared_assets_base }}/logo.svg" />
+  <link rel="icon" type="image/png" sizes="64x64" href="{{ shared_assets_base }}/favicon.png" />
+  <script src="{{ shared_assets_base }}/theme-init.js"></script>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <h1>Users</h1>
+  </header>
+
+  <main>
+    <div id="app-nav-mount"></div>
+
+    <div id="page-message" class="page-message hidden"></div>
+
+    <section class="section">
+      <h2>Add someone</h2>
+      <p class="field-hint">Lets them into Plans: they can create an account (a passkey is quickest) and are emailed how. Only administrators can invite. Everyone's plans and places are completely private to them, and you can't see anyone else's. Adding someone you removed restores them.</p>
+      <div id="add-user"></div>
+    </section>
+
+    <section class="section">
+      <h2>People with access</h2>
+      <p class="field-hint">Removing someone only stops them using Plans. What they own stays private and untouched until you delete it, and restoring them puts everything back.</p>
+      <div id="active-users" class="request-list"></div>
+    </section>
+
+    <section id="removed-section" class="section hidden">
+      <h2>Removed</h2>
+      <p class="field-hint">These people can't sign in to Plans. Deleting their data erases every plan and place they own and can't be undone; their email stays here, removed.</p>
+      <div id="removed-users" class="request-list"></div>
+    </section>
+  </main>
+
+  <script src="{{ shared_assets_base }}/theme.js"></script>
+  <script src="{{ shared_assets_base }}/icons.js"></script>
+  <script src="/nav.js"></script>
+  <script src="/users.js"></script>
+</body>
+</html>

@@ -1,7 +1,7 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Literal, Optional
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from .models import ScrapeStatus
 
@@ -184,3 +184,29 @@ class InstagramImportResult(BaseModel):
     # their plans got a refreshed parsed location.
     posts_rechecked: int = 0
     plans_updated: int = 0
+
+
+class Me(BaseModel):
+    """Who is signed in (GET /api/me). `is_admin` marks an administrator, the only one offered what costs money or acts
+    as the administrator: `can_use` says which, so the pages hide the rest."""
+
+    id: int
+    email: str
+    is_admin: bool
+    can_use: dict
+    logout_url: Optional[str] = None
+
+
+class UserOut(BaseModel):
+    id: int
+    email: str
+    status: str
+    is_admin: bool = False
+
+
+class UserAdd(BaseModel):
+    email: str = Field(min_length=3, max_length=254)
+
+
+class UserStatus(BaseModel):
+    status: Literal["active", "removed"]

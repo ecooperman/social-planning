@@ -372,7 +372,7 @@ function initAddLocation() {
     if (lookupAvailable) {
       cardEl.appendChild(buildPlaceSearch(fields.fill));
     } else {
-      cardEl.appendChild(Global.el("p", { class: "settings-note", text: "Place lookup isn't set up (no Google Maps key) - pick or add the country, state, and city yourself." }));
+      cardEl.appendChild(Global.el("p", { class: "settings-note", text: "Place search isn't available - pick or add the country, state, and city yourself." }));
     }
     cardEl.appendChild(fields.element);
     cardEl.appendChild(

@@ -1,29 +1,32 @@
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from shared_python import accounts_gate, oidc_login
 
-from shared_python import auth, oidc_login
-
-from . import access, config
+from . import access, places, schemas
 from .config import SHARED_ASSETS_BASE
-from .routers import geo, instagram_import, locations, plans, trips_link
+from .routers import geo, instagram_import, locations, plans, trips_link, users
 
 # Schema is owned by Alembic migrations (see migrations/) - run
 # `alembic upgrade head` before starting the app rather than relying on
 # create_all, so schema changes never silently bypass migrations.
 
 app = FastAPI(title="Social Planning")
-access.install(app)  # the whole app is private to its administrators
+access.install(app)  # only people with an account get in, each inside their own private data (app/access.py)
 templates = Jinja2Templates(directory="templates")
 
 
-@app.get("/api/me")
-def get_me(request: Request):
-    """Who is signed in, for the page header's email and Log out (the shared Global.mountUserBadge reads this). The
-    whole app is already private to its administrators (app/access.py), so whoever gets here is one."""
-    email = auth.request_email(request, config.DEV_USER_EMAIL).strip().lower()
-    return {"email": email, "is_admin": True, "logout_url": oidc_login.logout_url(request)}
+@app.get("/api/me", response_model=schemas.Me)
+def get_me(request: Request, account=Depends(accounts_gate.current_account)):
+    """Who is signed in, for the page header and for hiding what only an administrator may use."""
+    return schemas.Me(
+        id=account.id,
+        email=account.email,
+        is_admin=account.is_admin,
+        can_use={"places": account.is_admin and places.available(), "instagram": account.is_admin, "trips": account.is_admin},
+        logout_url=oidc_login.logout_url(request),
+    )
 
 
 # shared_assets_base baked in server-side (no client-side fetch, no flash
@@ -38,6 +41,7 @@ def _render(name: str):
 
 app.get("/", response_class=HTMLResponse)(_render("index.html"))
 app.get("/settings.html", response_class=HTMLResponse)(_render("settings.html"))
+app.get("/users.html", response_class=HTMLResponse)(_render("users.html"))
 
 
 app.include_router(plans.router)
@@ -45,6 +49,7 @@ app.include_router(locations.router)
 app.include_router(geo.router)
 app.include_router(trips_link.router)
 app.include_router(instagram_import.router)
+app.include_router(users.router)
 
 app.mount("/", StaticFiles(directory="static", html=True), name="static")
 

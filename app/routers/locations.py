@@ -1,6 +1,7 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
+from shared_python import accounts_gate
 from sqlalchemy.orm import Session
 
 from .. import crud, places, schemas
@@ -27,13 +28,14 @@ def _check_place(db: Session, place_id, exclude_id: int = None):
 
 
 @router.get("/lookup/available")
-def lookup_available():
-    """Whether the Google place lookup is configured - settings.html hides
-    the search box (manual entry only) when it isn't."""
-    return {"available": places.available()}
+def lookup_available(request: Request):
+    """Whether the Google place lookup can be used - settings.html hides the search box (manual entry only) when it
+    can't. It spends the administrator's Google key, so for anyone else it never can."""
+    account = accounts_gate.current_account(request)
+    return {"available": bool(account.is_admin and places.available())}
 
 
-@router.get("/lookup", response_model=List[schemas.PlaceSuggestion])
+@router.get("/lookup", response_model=List[schemas.PlaceSuggestion], dependencies=[Depends(accounts_gate.require_admin)])
 def lookup(q: str):
     if not q.strip():
         return []
@@ -43,7 +45,7 @@ def lookup(q: str):
         raise HTTPException(status_code=502, detail=str(err))
 
 
-@router.get("/lookup/{place_id}", response_model=schemas.PlaceDetails)
+@router.get("/lookup/{place_id}", response_model=schemas.PlaceDetails, dependencies=[Depends(accounts_gate.require_admin)])
 def lookup_details(place_id: str, db: Session = Depends(get_db)):
     try:
         details = places.details(place_id)

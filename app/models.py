@@ -2,9 +2,27 @@ import enum
 from datetime import datetime
 
 from sqlalchemy import Boolean, Column, DateTime, Enum, Float, ForeignKey, Integer, String, Text, UniqueConstraint
+from shared_python import owned
 from sqlalchemy.orm import relationship
 
 from .database import Base
+
+
+USER_ACTIVE = "active"
+USER_REMOVED = "removed"
+
+
+class User(Base):
+    """A person with an account in this app. Accounts are made only by an administrator (default-deny: signing in is
+    not enough) or, for an administrator, on first sign-in. Everything below belongs to one User (owned.OwnedMixin),
+    and nobody can see or change another's rows."""
+
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True)
+    email = Column(String, nullable=False, unique=True)
+    status = Column(String, nullable=False, default=USER_ACTIVE, server_default=USER_ACTIVE)
+    created_at = Column(DateTime, default=datetime.utcnow)
 
 
 class ScrapeStatus(str, enum.Enum):
@@ -14,7 +32,7 @@ class ScrapeStatus(str, enum.Enum):
     unsupported = "unsupported"
 
 
-class Country(Base):
+class Country(Base, owned.OwnedMixin):
     """Top of the place hierarchy (country -> region -> city) that a
     Location points into. Each level is its own managed list - picked from
     a dropdown, or created in place from the location form / Google lookup -
@@ -22,9 +40,10 @@ class Country(Base):
     everywhere. Names are unique ignoring case (enforced in crud)."""
 
     __tablename__ = "countries"
+    __table_args__ = (UniqueConstraint("owner_id", "name", name="uq_countries_owner_id_name"),)
 
     id = Column(Integer, primary_key=True)
-    name = Column(String, nullable=False, unique=True)
+    name = Column(String, nullable=False)
 
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -32,7 +51,7 @@ class Country(Base):
     regions = relationship("Region", back_populates="country")
 
 
-class Region(Base):
+class Region(Base, owned.OwnedMixin):
     """A state/province/prefecture - always inside one country. Called
     "region" in code because most countries don't have states."""
 
@@ -49,7 +68,7 @@ class Region(Base):
     country = relationship("Country", back_populates="regions")
 
 
-class City(Base):
+class City(Base, owned.OwnedMixin):
     """Always inside one country, and inside one of its regions - except in
     a country that has no regions at all (Singapore, Monaco), where
     region_id is null. That rule is enforced when a city is created (see
@@ -71,7 +90,7 @@ class City(Base):
     region = relationship("Region")
 
 
-class Location(Base):
+class Location(Base, owned.OwnedMixin):
     """A canonical place plans can be tagged with, managed on settings.html.
     Picked from a list rather than typed per plan, so "NYC" vs "New York"
     can't split one place's plans in two - which matters once
@@ -85,10 +104,14 @@ class Location(Base):
     """
 
     __tablename__ = "locations"
+    __table_args__ = (
+        UniqueConstraint("owner_id", "name", name="uq_locations_owner_id_name"),
+        UniqueConstraint("owner_id", "place_id", name="uq_locations_owner_id_place_id"),
+    )
 
     id = Column(Integer, primary_key=True)
-    # The label shown everywhere ("Salem, MA") - unique ignoring case.
-    name = Column(String, nullable=False, unique=True)
+    # The label shown everywhere ("Salem, MA") - unique ignoring case, per person.
+    name = Column(String, nullable=False)
 
     country_id = Column(Integer, ForeignKey("countries.id"), nullable=True)
     region_id = Column(Integer, ForeignKey("regions.id"), nullable=True)
@@ -98,7 +121,7 @@ class Location(Base):
     # Google's Place ID, set only by the lookup - the real "same place"
     # check (two spellings of one place can't both be added), and the
     # marker that a location was verified rather than typed.
-    place_id = Column(String, nullable=True, unique=True)
+    place_id = Column(String, nullable=True)
 
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -108,7 +131,7 @@ class Location(Base):
     city = relationship("City")
 
 
-class Plan(Base):
+class Plan(Base, owned.OwnedMixin):
     __tablename__ = "plans"
 
     id = Column(Integer, primary_key=True)

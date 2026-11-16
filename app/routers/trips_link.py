@@ -9,12 +9,14 @@ server-to-server on 127.0.0.1 (no CORS, no Cloudflare Access hop).
 from typing import Optional
 
 import requests
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
+from shared_python import accounts_gate
 
 from ..config import TRIPS_API_BASE, TRIPS_PUBLIC_URL, TRIPS_SERVICE_TOKEN
 
-router = APIRouter(prefix="/api/trips-link", tags=["trips-link"])
+# Acts as the administrator in trip-planning (a service token), so only an administrator may use it.
+router = APIRouter(prefix="/api/trips-link", tags=["trips-link"], dependencies=[Depends(accounts_gate.require_admin)])
 
 
 def _trips_request(method: str, path: str, **kwargs):
