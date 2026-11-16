@@ -3,7 +3,9 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from . import access
+from shared_python import auth, oidc_login
+
+from . import access, config
 from .config import SHARED_ASSETS_BASE
 from .routers import geo, instagram_import, locations, plans, trips_link
 
@@ -14,6 +16,14 @@ from .routers import geo, instagram_import, locations, plans, trips_link
 app = FastAPI(title="Social Planning")
 access.install(app)  # the whole app is private to its administrators
 templates = Jinja2Templates(directory="templates")
+
+
+@app.get("/api/me")
+def get_me(request: Request):
+    """Who is signed in, for the page header's email and Log out (the shared Global.mountUserBadge reads this). The
+    whole app is already private to its administrators (app/access.py), so whoever gets here is one."""
+    email = auth.request_email(request, config.DEV_USER_EMAIL).strip().lower()
+    return {"email": email, "is_admin": True, "logout_url": oidc_login.logout_url(request)}
 
 
 # shared_assets_base baked in server-side (no client-side fetch, no flash

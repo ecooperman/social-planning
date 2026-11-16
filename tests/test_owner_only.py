@@ -147,3 +147,22 @@ def test_the_token_cannot_be_used_to_write_or_to_reach_a_page(with_token):
     assert with_token.get("/", headers={"X-Service-Token": TOKEN}).status_code == 302
     assert with_token.get("/api/plans/1/extra", headers={"X-Service-Token": TOKEN}).status_code in (401, 302)
     assert with_token.get("/api/plans/abc", headers={"X-Service-Token": TOKEN}).status_code == 401
+
+
+# --- who is signed in, for the header's Log out -----------------------------------------------------------------------
+
+
+def test_me_says_who_is_signed_in_and_where_log_out_goes(production, key):
+    production.cookies.set("oidc_session", session(key, "Owner@Example.com"))
+    assert production.get("/api/me").json() == {"email": "owner@example.com", "is_admin": True, "logout_url": FRONT + "/auth/logout"}
+
+
+def test_me_is_refused_to_anyone_who_is_not_signed_in_or_not_an_administrator(production, key):
+    assert production.get("/api/me").status_code == 401
+    production.cookies.set("oidc_session", session(key, "stranger@example.com"))
+    assert production.get("/api/me").status_code == 403
+
+
+def test_locally_me_is_the_dev_user_with_no_front_door(client):
+    me = client.get("/api/me").json()
+    assert me["email"] == config.DEV_USER_EMAIL and me["logout_url"] is None
