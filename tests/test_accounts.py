@@ -476,7 +476,7 @@ def test_suggestions_are_everyone_from_any_app_minus_people_already_here(person,
     resp = person(ADMIN).get("/api/users/suggestions")
     assert resp.status_code == 200
     # the administrator and Bob already have access here, so they are not offered again
-    assert resp.json() == ["amy@example.com", "zed@example.com"]
+    assert [x["email"] for x in resp.json()] == ["amy@example.com", "zed@example.com"]
 
 
 def test_suggestions_say_who_uses_the_apps_so_only_an_administrator_gets_them(person, people, tmp_path, monkeypatch):
