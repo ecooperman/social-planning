@@ -5,6 +5,7 @@ tries every route of the app against it (reading, listing, changing, deleting, p
 get nothing and change nothing. Alongside: who can get in at all (default-deny), that no sign-in trick makes one person
 another, who may invite, and that what costs money or acts as the administrator stays the administrator's."""
 import re
+import sqlite3
 import time
 
 import jwt
@@ -453,3 +454,32 @@ def test_every_table_of_a_persons_data_has_an_owner_and_the_filter_covers_it():
     for model in OWNED_TABLES:
         assert issubclass(model, owned.OwnedMixin) and not model.__table__.c.owner_id.nullable
     assert access.PUBLIC_PATHS == ("/manifest.json", "/icons/")
+
+
+def fake_apps(tmp_path, monkeypatch, **emails_by_folder):
+    """Other apps' databases next to this one, each with the given people (see shared_python.directory)."""
+    for folder, (filename, emails) in emails_by_folder.items():
+        (tmp_path / folder).mkdir(exist_ok=True)
+        connection = sqlite3.connect(tmp_path / folder / filename)
+        connection.execute("CREATE TABLE users (id INTEGER PRIMARY KEY, email TEXT NOT NULL)")
+        connection.executemany("INSERT INTO users (email) VALUES (?)", [(e,) for e in emails])
+        connection.commit()
+        connection.close()
+    monkeypatch.setenv("PEOPLE_APPS_DIR", str(tmp_path))
+
+
+def test_suggestions_are_everyone_from_any_app_minus_people_already_here(person, people, tmp_path, monkeypatch):
+    fake_apps(
+        tmp_path, monkeypatch,
+        **{"lists": ("gifts.db", ["Zed@example.com", "bob@example.com"]), "finances": ("finances.db", ["amy@example.com"])},
+    )
+    resp = person(ADMIN).get("/api/users/suggestions")
+    assert resp.status_code == 200
+    # the administrator and Bob already have access here, so they are not offered again
+    assert resp.json() == ["amy@example.com", "zed@example.com"]
+
+
+def test_suggestions_say_who_uses_the_apps_so_only_an_administrator_gets_them(person, people, tmp_path, monkeypatch):
+    fake_apps(tmp_path, monkeypatch, lists=("gifts.db", ["secret-person@example.com"]))
+    resp = person("carol@example.com").get("/api/users/suggestions")
+    assert resp.status_code == 403 and "secret-person" not in resp.text
