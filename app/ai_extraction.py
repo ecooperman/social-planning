@@ -13,10 +13,12 @@ to chase out here.
 """
 from typing import List, Optional
 
-import anthropic
+from shared_python.lazy import lazy_module
 from pydantic import BaseModel
 
 from .config import ANTHROPIC_API_KEY
+
+anthropic = lazy_module("anthropic")  # imported on first use: it is slow to load and most requests never call the AI
 
 MODEL = "claude-opus-5-5"
 
@@ -76,7 +78,7 @@ class CaptionExtraction(BaseModel):
     activities: List[ExtractedPlace]
 
 
-def _client() -> anthropic.Anthropic:
+def _client() -> "anthropic.Anthropic":
     if not ANTHROPIC_API_KEY:
         raise RuntimeError("ANTHROPIC_API_KEY is not configured")
     return anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
