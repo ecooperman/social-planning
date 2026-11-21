@@ -25,7 +25,7 @@ from .database import SessionLocal
 
 _TRIPS_READS = re.compile(r"^/api/(locations|plans|plans/\d+)$")
 PUBLIC_PATHS = ("/manifest.json", "/icons/")
-seen = usage.LastSeen(SessionLocal)  # when each person was last here, for the dashboard's stats pages
+seen = usage.LastSeen(SessionLocal, app="plans")  # when each person was last here, for the dashboard's stats pages
 
 
 def account_for(email: str) -> Union[Account, str]:
