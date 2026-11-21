@@ -59,6 +59,14 @@ def clean_db():
         yield
 
 
+@pytest.fixture(autouse=True)
+def forget_last_seen():
+    """Who was recorded as last seen is remembered in memory for an hour; the tests empty the database between them but keep ids."""
+    from app import access
+
+    access.seen.reset()
+
+
 @pytest.fixture()
 def make_user():
     """make_user("bob@example.com") -> the new person's id (an account: they have been let in)."""

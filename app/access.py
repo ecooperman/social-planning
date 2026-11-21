@@ -17,7 +17,7 @@ import hmac
 import re
 from typing import Optional, Union
 
-from shared_python import accounts_gate
+from shared_python import accounts_gate, usage
 from shared_python.accounts_gate import Account
 
 from . import config, crud, models
@@ -25,6 +25,7 @@ from .database import SessionLocal
 
 _TRIPS_READS = re.compile(r"^/api/(locations|plans|plans/\d+)$")
 PUBLIC_PATHS = ("/manifest.json", "/icons/")
+seen = usage.LastSeen(SessionLocal)  # when each person was last here, for the dashboard's stats pages
 
 
 def account_for(email: str) -> Union[Account, str]:
@@ -61,4 +62,5 @@ def install(app) -> None:
         dev_user_email=config.DEV_USER_EMAIL,
         service_account=trips_read,
         public_paths=PUBLIC_PATHS,
+        seen=seen,
     )

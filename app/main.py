@@ -6,7 +6,7 @@ from shared_python import accounts_gate, oidc_login
 
 from . import access, places, schemas
 from .config import SHARED_ASSETS_BASE
-from .routers import geo, instagram_import, locations, plans, trips_link, users
+from .routers import geo, instagram_import, locations, plans, stats, trips_link, users
 
 # Schema is owned by Alembic migrations (see migrations/) - run
 # `alembic upgrade head` before starting the app rather than relying on
@@ -50,6 +50,7 @@ app.include_router(geo.router)
 app.include_router(trips_link.router)
 app.include_router(instagram_import.router)
 app.include_router(users.router)
+app.include_router(stats.router)
 
 app.mount("/", StaticFiles(directory="static", html=True), name="static")
 
