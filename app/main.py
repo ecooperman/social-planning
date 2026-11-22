@@ -2,7 +2,7 @@ from fastapi import Depends, FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from shared_python import accounts_gate, oidc_login
+from shared_python import accounts_gate, feedback_relay, oidc_login
 
 from . import access, places, schemas
 from .config import SHARED_ASSETS_BASE
@@ -51,6 +51,7 @@ app.include_router(trips_link.router)
 app.include_router(instagram_import.router)
 app.include_router(users.router)
 app.include_router(stats.router)
+feedback_relay.install(app, "plans")  # Send feedback in the menu, passed on to the dashboard's inbox (behind the accounts gate)
 
 app.mount("/", StaticFiles(directory="static", html=True), name="static")
 
