@@ -3,7 +3,7 @@
 <head>
   {% include "shared_head.html" %}
   <title>Social Planning</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="{{ asset('style.css') }}" />
 
   <!-- Home screen / installed-app support -->
   <link rel="manifest" href="manifest.json" />
@@ -72,9 +72,9 @@
     </section>
   </main>
 
-  <script src="{{ shared_assets_base }}/theme.js"></script>
-  <script src="{{ shared_assets_base }}/icons.js"></script>
-  <script src="nav.js"></script>
-  <script src="app.js"></script>
+  <script src="{{ shared_asset('theme.js') }}"></script>
+  <script src="{{ shared_asset('icons.js') }}"></script>
+  <script src="{{ asset('nav.js') }}"></script>
+  <script src="{{ asset('app.js') }}"></script>
 </body>
 </html>

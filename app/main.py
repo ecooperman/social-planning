@@ -54,6 +54,9 @@ app.include_router(users.router)
 app.include_router(stats.router)
 feedback_relay.install(app, "plans")  # Send feedback in the menu, passed on to the dashboard's inbox (behind the accounts gate)
 
+# Cache-Control for every response: no-store, except a versioned script/stylesheet/image (?v=<hash>), kept for a year - see shared_python/pages.py.
+pages.install_cache_headers(app)
+
 app.mount("/", StaticFiles(directory="static", html=True), name="static")
 
 if __name__ == "__main__":
