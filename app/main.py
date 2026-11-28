@@ -2,7 +2,7 @@ from fastapi import Depends, FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from shared_python import accounts_gate, feedback_relay, oidc_login
+from shared_python import accounts_gate, feedback_relay, oidc_login, pages
 
 from . import access, places, schemas
 from .config import SHARED_ASSETS_BASE
@@ -15,6 +15,7 @@ from .routers import geo, instagram_import, locations, plans, stats, trips_link,
 app = FastAPI(title="Social Planning")
 access.install(app)  # only people with an account get in, each inside their own private data (app/access.py)
 templates = Jinja2Templates(directory="templates")
+pages.install(templates)
 
 
 @app.get("/api/me", response_model=schemas.Me)
